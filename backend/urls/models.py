@@ -60,9 +60,9 @@ class ShortenedURL(models.Model):
             border=4,
         )
         
-        # Create the frontend-facing short URL for QR code
-        frontend_base = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000').rstrip('/')
-        full_url = f"{frontend_base}/r/{self.short_code}"
+        # Point QR to backend redirect endpoint so it works in any environment
+        redirect_base = getattr(settings, 'BACKEND_URL', 'http://127.0.0.1:8000').rstrip('/')
+        full_url = f"{redirect_base}/api/urls/redirect/{self.short_code}/"
         
         qr.add_data(full_url)
         qr.make(fit=True)

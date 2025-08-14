@@ -126,16 +126,12 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'], url_path='qr-download')
     def qr_download(self, request, pk=None):
-        """Return a QR PNG. If Cloudinary URL exists, redirect to it; else stream generated PNG."""
+        """Return a QR PNG generated on-the-fly that points to backend redirect (no interstitial page)."""
         url_obj = self.get_object()
-        # Prefer redirect to Cloudinary-hosted image
-        if url_obj.qr_code_url:
-            return HttpResponseRedirect(url_obj.qr_code_url)
-
         # Generate on-the-fly PNG and stream it
         try:
-            frontend_base = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000').rstrip('/')
-            full_url = f"{frontend_base}/r/{url_obj.short_code}"
+            redirect_base = getattr(settings, 'BACKEND_URL', 'http://127.0.0.1:8000').rstrip('/')
+            full_url = f"{redirect_base}/api/urls/redirect/{url_obj.short_code}/"
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
