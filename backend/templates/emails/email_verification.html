@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - SaaS URL</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        .content {
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .welcome-text {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #555;
+        }
+        .verification-text {
+            font-size: 16px;
+            margin-bottom: 30px;
+            color: #666;
+        }
+        .verify-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 20px 0;
+            transition: transform 0.2s ease;
+        }
+        .verify-button:hover {
+            transform: translateY(-2px);
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .expiry-notice {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Welcome to SaaS URL!</h1>
+        </div>
+        
+        <div class="content">
+            <div class="welcome-text">
+                Hi {{ user.first_name|default:user.username }},
+            </div>
+            
+            <div class="verification-text">
+                Thank you for signing up! To complete your registration and start using our service, 
+                please verify your email address by clicking the button below.
+            </div>
+            
+            <a href="{{ verification_url }}" class="verify-button">
+                Verify Email Address
+            </a>
+            
+            <div class="expiry-notice">
+                ⏰ This verification link will expire in 24 hours for security reasons.
+            </div>
+            
+            <div style="margin-top: 30px; color: #666; font-size: 14px;">
+                If the button doesn't work, you can copy and paste this link into your browser:<br>
+                <a href="{{ verification_url }}" style="color: #667eea; word-break: break-all;">
+                    {{ verification_url }}
+                </a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>
+                If you didn't create an account with SaaS URL, you can safely ignore this email.<br>
+                For support, contact us at <a href="mailto:support@saasurl.com">support@saasurl.com</a>
+            </p>
+            <p>&copy; 2024 SaaS URL. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

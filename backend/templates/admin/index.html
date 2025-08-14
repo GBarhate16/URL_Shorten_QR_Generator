@@ -1,0 +1,319 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .dashboard-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .welcome-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 16px;
+        padding: 40px;
+        margin-bottom: 30px;
+        text-align: center;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .welcome-section h1 {
+        font-size: 2.5rem;
+        margin: 0 0 16px 0;
+        font-weight: 700;
+    }
+
+    .welcome-section p {
+        font-size: 1.1rem;
+        margin: 0;
+        opacity: 0.9;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 40px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 32px 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e2e8f0;
+        text-align: center;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+
+    .stat-card .icon {
+        font-size: 3rem;
+        margin-bottom: 16px;
+        opacity: 0.8;
+    }
+
+    .stat-card h3 {
+        margin: 0 0 8px 0;
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-card .number {
+        font-size: 3rem;
+        font-weight: 800;
+        color: #2563eb;
+        margin: 0;
+        line-height: 1;
+    }
+
+    .stat-card .trend {
+        margin-top: 12px;
+        font-size: 14px;
+        color: #10b981;
+        font-weight: 500;
+    }
+
+    .stat-card .trend.down {
+        color: #ef4444;
+    }
+
+    .quick-actions {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 30px;
+    }
+
+    .quick-actions h2 {
+        margin: 0 0 24px 0;
+        color: #1e293b;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        color: #374151;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+        background: #2563eb;
+        color: white;
+        border-color: #2563eb;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .action-btn .icon {
+        font-size: 1.5rem;
+    }
+
+    .recent-activity {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e2e8f0;
+    }
+
+    .recent-activity h2 {
+        margin: 0 0 24px 0;
+        color: #1e293b;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .activity-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .activity-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #e0f2fe;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #0284c7;
+        font-size: 1.2rem;
+    }
+
+    .activity-content h4 {
+        margin: 0 0 4px 0;
+        color: #1e293b;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .activity-content p {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+
+    .activity-time {
+        margin-left: auto;
+        color: #94a3b8;
+        font-size: 0.8rem;
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-container {
+            padding: 16px;
+        }
+        
+        .welcome-section {
+            padding: 24px 20px;
+        }
+        
+        .welcome-section h1 {
+            font-size: 2rem;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        
+        .actions-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .stat-card, .quick-actions, .recent-activity {
+            padding: 24px 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Welcome Section -->
+    <div class="welcome-section">
+        <h1>🚀 Welcome to URL Shortener Admin</h1>
+        <p>Manage your URL shortening service with powerful tools and insights</p>
+    </div>
+
+    <!-- Statistics Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="icon">👥</div>
+            <h3>Total Users</h3>
+            <div class="number">{{ user_count|default:"0" }}</div>
+            <div class="trend">+{{ new_users_week|default:"0" }} this week</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="icon">🔗</div>
+            <h3>Total URLs</h3>
+            <div class="number">{{ url_count|default:"0" }}</div>
+            <div class="trend">+{{ new_urls_today|default:"0" }} today</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="icon">👁️</div>
+            <h3>Total Clicks</h3>
+            <div class="number">{{ click_count|default:"0" }}</div>
+            <div class="trend">+{{ clicks_today|default:"0" }} today</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="icon">⭐</div>
+            <h3>Premium Users</h3>
+            <div class="number">{{ premium_count|default:"0" }}</div>
+            <div class="trend">{{ premium_percentage|default:"0" }}% of total</div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <h2>Quick Actions</h2>
+        <div class="actions-grid">
+            <a href="{% url 'admin:users_customuser_add' %}" class="action-btn">
+                <span class="icon">👤</span>
+                <span>Add User</span>
+            </a>
+            <a href="{% url 'admin:urls_shortenedurl_add' %}" class="action-btn">
+                <span class="icon">🔗</span>
+                <span>Create URL</span>
+            </a>
+            <a href="{% url 'admin:users_customuser_changelist' %}" class="action-btn">
+                <span class="icon">📊</span>
+                <span>Manage Users</span>
+            </a>
+            <a href="{% url 'admin:urls_shortenedurl_changelist' %}" class="action-btn">
+                <span class="icon">📈</span>
+                <span>View URLs</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="recent-activity">
+        <h2>Recent Activity</h2>
+        <ul class="activity-list">
+            {% for user in recent_users|slice:":5" %}
+            <li class="activity-item">
+                <div class="activity-icon">👤</div>
+                <div class="activity-content">
+                    <h4>{{ user.username }}</h4>
+                    <p>Joined {{ user.date_joined|timesince }} ago</p>
+                </div>
+                <div class="activity-time">{{ user.date_joined|date:"M d" }}</div>
+            </li>
+            {% empty %}
+            <li class="activity-item">
+                <div class="activity-icon">📝</div>
+                <div class="activity-content">
+                    <h4>No recent activity</h4>
+                    <p>Users will appear here as they join</p>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
