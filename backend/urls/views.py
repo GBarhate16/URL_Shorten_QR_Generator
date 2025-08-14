@@ -123,6 +123,15 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
             'id': url_obj.id,
             'is_active': url_obj.is_active
         })
+
+    @action(detail=True, methods=['get'], url_path='qr-download')
+    def qr_download(self, request, pk=None):
+        """Return a direct download URL for the QR image if available."""
+        url_obj = self.get_object()
+        if url_obj.qr_code_url:
+            return Response({ 'download_url': url_obj.qr_code_url })
+        # No cloud URL; generate a signed fallback if ever added later
+        return Response({ 'detail': 'QR code URL not available' }, status=status.HTTP_404_NOT_FOUND)
     
     @action(detail=True, methods=['get'])
     def clicks(self, request, pk=None):
@@ -199,23 +208,16 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
         days = days_map.get(date_range, 30)
         start_dt = now - timedelta(days=days - 1)
 
-        # Time series: URLs created per day
+        # QuerySets
         urls_qs = ShortenedURL.objects.filter(user=user, created_at__date__gte=start_dt.date())
-        urls_series_qs = (
-            urls_qs
-            .annotate(day=TruncDate('created_at'))
-            .values('day')
-            .annotate(count=Count('id'))
-        )
-
-        # Time series: Clicks per day
         clicks_qs = URLClick.objects.filter(shortened_url__user=user, clicked_at__date__gte=start_dt.date())
-        clicks_series_qs = (
-            clicks_qs
-            .annotate(day=TruncDate('clicked_at'))
-            .values('day')
-            .annotate(count=Count('id'))
-        )
+
+        # Build daily buckets resiliently without DB date functions
+        from collections import Counter
+        url_dates = [dt.date().isoformat() for dt in urls_qs.values_list('created_at', flat=True)]
+        click_dates = [dt.date().isoformat() for dt in clicks_qs.values_list('clicked_at', flat=True)]
+        urls_counter = Counter(url_dates)
+        clicks_counter = Counter(click_dates)
 
         # Zero-fill date buckets for continuity
         day_cursor = start_dt.date()
@@ -224,16 +226,8 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
             date_buckets.append(day_cursor)
             day_cursor = day_cursor + timedelta(days=1)
 
-        urls_counts = {}
-        for item in urls_series_qs:
-            day = item.get('day')
-            if hasattr(day, 'isoformat'):
-                urls_counts[day.isoformat()] = int(item.get('count', 0))
-        clicks_counts = {}
-        for item in clicks_series_qs:
-            day = item.get('day')
-            if hasattr(day, 'isoformat'):
-                clicks_counts[day.isoformat()] = int(item.get('count', 0))
+        urls_counts = dict(urls_counter)
+        clicks_counts = dict(clicks_counter)
 
         urls_series = [ { 'date': d.isoformat(), 'count': int(urls_counts.get(d.isoformat(), 0)) } for d in date_buckets ]
         clicks_series = [ { 'date': d.isoformat(), 'count': int(clicks_counts.get(d.isoformat(), 0)) } for d in date_buckets ]
@@ -241,10 +235,7 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
         # Breakdowns (best-effort; computed in Python for clarity)
         # Countries
         countries_qs = clicks_qs.values('country').annotate(count=Count('id')).order_by('-count')[:10]
-        countries = [
-            { 'label': (item['country'] or 'Unknown'), 'count': item['count'] }
-            for item in countries_qs
-        ]
+        countries = [ { 'label': (item['country'] or 'Unknown'), 'count': int(item['count']) } for item in countries_qs ]
 
         # Devices / OS / Browsers / Referrers
         device_counts = {}
@@ -299,6 +290,7 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
             pass
 
         return Response(analytics_data)
+
 
 
 class URLRedirectView(APIView):
