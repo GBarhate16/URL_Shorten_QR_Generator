@@ -202,6 +202,12 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+# CSRF trusted origins (must be scheme + host only, no trailing slash)
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+])
+
 # Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
