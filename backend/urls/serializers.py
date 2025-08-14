@@ -16,18 +16,13 @@ class ShortenedURLSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'original_url', 'short_code', 'title', 'description',
             'user', 'created_at', 'updated_at', 'expires_at', 'is_active',
-            'click_count', 'qr_code', 'qr_code_url', 'qr_code_download_url', 'full_short_url'
+            'click_count', 'qr_code_url', 'qr_code_download_url', 'full_short_url'
         ]
-        read_only_fields = ['short_code', 'user', 'created_at', 'updated_at', 'click_count', 'qr_code', 'qr_code_url', 'qr_code_download_url']
+        read_only_fields = ['short_code', 'user', 'created_at', 'updated_at', 'click_count', 'qr_code_url', 'qr_code_download_url']
     
     def get_qr_code_url(self, obj):
-        if getattr(obj, 'qr_code_url', None):
-            return obj.qr_code_url
-        if obj.qr_code:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.qr_code.url)
-        return None
+        # Only return Cloudinary URL if present; avoid accessing local file storage
+        return getattr(obj, 'qr_code_url', None) or None
 
     def get_qr_code_download_url(self, obj):
         cloud_name = getattr(settings, 'CLOUDINARY_CLOUD_NAME', None)
@@ -35,9 +30,6 @@ class ShortenedURLSerializer(serializers.ModelSerializer):
         filename = slugify(title) or f"qr-{obj.short_code}"
         if cloud_name:
             return f"https://res.cloudinary.com/{cloud_name}/image/upload/fl_attachment:{filename}.png/qr_codes/qr_{obj.short_code}.png"
-        request = self.context.get('request')
-        if request and obj.qr_code:
-            return request.build_absolute_uri(obj.qr_code.url)
         return None
     
     def get_full_short_url(self, obj):
