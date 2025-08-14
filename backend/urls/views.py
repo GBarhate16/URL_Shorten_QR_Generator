@@ -126,12 +126,33 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'], url_path='qr-download')
     def qr_download(self, request, pk=None):
-        """Return a direct download URL for the QR image if available."""
+        """Return a QR PNG. If Cloudinary URL exists, redirect to it; else stream generated PNG."""
         url_obj = self.get_object()
+        # Prefer redirect to Cloudinary-hosted image
         if url_obj.qr_code_url:
-            return Response({ 'download_url': url_obj.qr_code_url })
-        # No cloud URL; generate a signed fallback if ever added later
-        return Response({ 'detail': 'QR code URL not available' }, status=status.HTTP_404_NOT_FOUND)
+            return HttpResponseRedirect(url_obj.qr_code_url)
+
+        # Generate on-the-fly PNG and stream it
+        try:
+            frontend_base = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000').rstrip('/')
+            full_url = f"{frontend_base}/r/{url_obj.short_code}"
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4,
+            )
+            qr.add_data(full_url)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            buffer = BytesIO()
+            img.save(buffer, format='PNG')
+            buffer.seek(0)
+            resp = HttpResponse(buffer.getvalue(), content_type='image/png')
+            resp['Content-Disposition'] = f'attachment; filename="qr-{url_obj.short_code}.png"'
+            return resp
+        except Exception:
+            return Response({ 'detail': 'Failed to generate QR image' }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     @action(detail=True, methods=['get'])
     def clicks(self, request, pk=None):
@@ -193,7 +214,10 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
         user = request.user
         date_range = request.query_params.get('range', '30d')
         cache_key = ANALYTICS_KEY(user.id, date_range)
-        cached = cache.get(cache_key)
+        try:
+            cached = cache.get(cache_key)
+        except Exception:
+            cached = None
         if cached is not None:
             return Response(cached)
 
