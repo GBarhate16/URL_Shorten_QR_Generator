@@ -63,15 +63,19 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
     
     def list(self, request, *args, **kwargs):
         """Cache the paginated list per user for a short TTL."""
-        cache_key = USER_URLS_KEY(request.user.id)
-        cached = cache.get(cache_key)
-        if cached is not None:
-            return Response(cached)
-        response = super().list(request, *args, **kwargs)
         try:
-            cache.set(cache_key, response.data, URLS_TTL)
+            cache_key = USER_URLS_KEY(request.user.id)
+            cached = cache.get(cache_key)
+            if cached is not None:
+                return Response(cached)
         except Exception:
-            pass
+            cache_key = None
+        response = super().list(request, *args, **kwargs)
+        if cache_key:
+            try:
+                cache.set(cache_key, response.data, URLS_TTL)
+            except Exception:
+                pass
         return response
 
     def perform_create(self, serializer):
@@ -220,8 +224,16 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
             date_buckets.append(day_cursor)
             day_cursor = day_cursor + timedelta(days=1)
 
-        urls_counts = { (item['day'] or now.date()).isoformat(): item['count'] for item in urls_series_qs }
-        clicks_counts = { (item['day'] or now.date()).isoformat(): item['count'] for item in clicks_series_qs }
+        urls_counts = {}
+        for item in urls_series_qs:
+            day = item.get('day')
+            if hasattr(day, 'isoformat'):
+                urls_counts[day.isoformat()] = int(item.get('count', 0))
+        clicks_counts = {}
+        for item in clicks_series_qs:
+            day = item.get('day')
+            if hasattr(day, 'isoformat'):
+                clicks_counts[day.isoformat()] = int(item.get('count', 0))
 
         urls_series = [ { 'date': d.isoformat(), 'count': int(urls_counts.get(d.isoformat(), 0)) } for d in date_buckets ]
         clicks_series = [ { 'date': d.isoformat(), 'count': int(clicks_counts.get(d.isoformat(), 0)) } for d in date_buckets ]
