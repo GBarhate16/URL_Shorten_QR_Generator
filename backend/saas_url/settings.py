@@ -107,11 +107,13 @@ CACHES = {
 }
 
 # Channels Configuration
+# Prefer a full Redis URL for Channels; fall back to tuple host only if explicitly provided
+CHANNEL_LAYER_URL = env('CHANNEL_LAYER_URL', default=REDIS_URL)
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': env('CHANNEL_LAYER_BACKEND', default='channels_redis.core.RedisChannelLayer'),
         'CONFIG': {
-            'hosts': [env('CHANNEL_LAYER_HOST', default=('127.0.0.1', 6379))],
+            'hosts': [CHANNEL_LAYER_URL],
         },
     },
 }
