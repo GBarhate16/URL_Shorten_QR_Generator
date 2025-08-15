@@ -29,7 +29,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setNotifications(prev => safeSlice([notification, ...safeArray(prev)], 0, 10));
   }, []);
 
-  const markAsRead = useCallback((id: string) => {
+  const markAsRead = useCallback((id: number) => {
     setNotifications(prev => safeMap(safeArray(prev), n => (n.id === id ? { ...n, is_read: true } : n)));
   }, []);
 
