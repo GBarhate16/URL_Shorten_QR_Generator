@@ -101,7 +101,7 @@ export function useUrls() {
 	);
 
 	const stats = useMemo(() => {
-		if (!urls) return { totalUrls: 0, totalClicks: 0, activeUrls: 0 };
+		if (!urls || !Array.isArray(urls)) return { totalUrls: 0, totalClicks: 0, activeUrls: 0 };
 		return {
 			totalUrls: urls.length,
 			totalClicks: urls.reduce((total, url) => total + url.click_count, 0),
@@ -110,13 +110,13 @@ export function useUrls() {
 	}, [urls]);
 
 	const recentUrls = useMemo(() => {
-		return urls ? urls.slice(0, 5) : [];
+		return urls && Array.isArray(urls) ? urls.slice(0, 5) : [];
 	}, [urls]);
 
 	const updateUrlClickCount = useCallback((urlId: number, newClickCount: number) => {
 		mutate(
 			(current) => {
-				if (!current) return current;
+				if (!current || !Array.isArray(current)) return current;
 				return current.map(url => (url.id === urlId ? { ...url, click_count: newClickCount } : url));
 			},
 			false

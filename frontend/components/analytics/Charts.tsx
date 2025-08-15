@@ -36,11 +36,17 @@ export default function AnalyticsCharts({ analytics, loading, error, range, setR
   const [activeTab, setActiveTab] = useState<'countries' | 'devices' | 'browsers' | 'referrers'>('countries');
   const isMobile = useIsMobile();
   const seriesData = useMemo(() => {
-    if (!analytics) return { urls: [], clicks: [] };
+    if (!analytics || !analytics.series) return { urls: [], clicks: [] };
+    
     const formatDate = (iso: string) => new Date(iso).toLocaleDateString();
+    
+    // Ensure the arrays exist before calling .map()
+    const urlsCreated = Array.isArray(analytics.series.urls_created) ? analytics.series.urls_created : [];
+    const clicks = Array.isArray(analytics.series.clicks) ? analytics.series.clicks : [];
+    
     return {
-      urls: analytics.series.urls_created.map((p) => ({ date: formatDate(p.date), count: p.count })),
-      clicks: analytics.series.clicks.map((p) => ({ date: formatDate(p.date), count: p.count })),
+      urls: urlsCreated.map((p) => ({ date: formatDate(p.date), count: p.count })),
+      clicks: clicks.map((p) => ({ date: formatDate(p.date), count: p.count })),
     };
   }, [analytics]);
 
@@ -168,7 +174,7 @@ export default function AnalyticsCharts({ analytics, loading, error, range, setR
             {!analytics ? (
               <div className="flex items-center justify-center h-full text-muted-foreground">No data</div>
             ) : activeTab === 'countries' ? (
-              analytics.breakdowns.countries.length ? (
+              analytics.breakdowns?.countries?.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={analytics.breakdowns.countries} layout={isMobile ? "vertical" : "horizontal"}>
                     {isMobile ? (
@@ -190,7 +196,7 @@ export default function AnalyticsCharts({ analytics, loading, error, range, setR
                 <div className="flex items-center justify-center h-full text-muted-foreground">No country data</div>
               )
             ) : activeTab === 'devices' ? (
-              analytics.breakdowns.devices.length ? (
+              analytics.breakdowns?.devices?.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={analytics.breakdowns.devices} dataKey="count" nameKey="label" innerRadius={isMobile ? 36 : 50} outerRadius={isMobile ? 60 : 80}>
@@ -206,7 +212,7 @@ export default function AnalyticsCharts({ analytics, loading, error, range, setR
                 <div className="flex items-center justify-center h-full text-muted-foreground">No device data</div>
               )
             ) : activeTab === 'browsers' ? (
-              analytics.breakdowns.browsers.length ? (
+              analytics.breakdowns?.browsers?.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={analytics.breakdowns.browsers} dataKey="count" nameKey="label" innerRadius={isMobile ? 36 : 50} outerRadius={isMobile ? 60 : 80}>
@@ -222,7 +228,7 @@ export default function AnalyticsCharts({ analytics, loading, error, range, setR
                 <div className="flex items-center justify-center h-full text-muted-foreground">No browser data</div>
               )
             ) : (
-              analytics.breakdowns.referrers.length ? (
+              analytics.breakdowns?.referrers?.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={analytics.breakdowns.referrers} layout={isMobile ? "vertical" : "horizontal"}>
                     {isMobile ? (
