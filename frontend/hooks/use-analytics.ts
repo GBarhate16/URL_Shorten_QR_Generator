@@ -35,20 +35,40 @@ export interface AnalyticsResponse {
 }
 
 export function useAnalytics(range: AnalyticsRange = "30d") {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, getValidAccessToken } = useAuth();
 
   const key = useMemo(() => (isAuthenticated ? ["urls-analytics", range] : null), [isAuthenticated, range]);
 
   const fetcher = async (): Promise<AnalyticsResponse> => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    // Get valid access token with automatic refresh if needed
+    const token = await getValidAccessToken();
+    if (!token) {
+      throw new Error('No valid access token available');
+    }
+
     const headers: Record<string, string> = { Accept: "application/json" };
     if (token) headers.Authorization = `Bearer ${token}`;
+    
     const url = `${getApiUrl("URLS_ANALYTICS")}?range=${encodeURIComponent(range)}`;
     const resp = await fetch(url, { method: "GET", headers, mode: "cors", credentials: "omit" });
+    
     if (!resp.ok) {
+      if (resp.status === 401) {
+        // Token might be invalid, try to refresh and retry once
+        const newToken = await getValidAccessToken();
+        if (newToken && newToken !== token) {
+          headers.Authorization = `Bearer ${newToken}`;
+          const retryResp = await fetch(url, { method: "GET", headers, mode: "cors", credentials: "omit" });
+          if (retryResp.ok) {
+            return (await retryResp.json()) as AnalyticsResponse;
+          }
+        }
+      }
+      
       const txt = await resp.text();
       throw new Error(`Failed to fetch analytics: ${resp.status} ${txt}`);
     }
+    
     return (await resp.json()) as AnalyticsResponse;
   };
 
@@ -57,6 +77,9 @@ export function useAnalytics(range: AnalyticsRange = "30d") {
     refreshInterval: 5_000,
     dedupingInterval: 2_500,
     keepPreviousData: true as unknown as boolean,
+    onError: (error) => {
+      console.error('Analytics fetch error:', error);
+    },
   });
 
   return { analytics: data, isLoading, error, mutate };

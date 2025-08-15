@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -25,6 +25,8 @@ interface AuthContextType {
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
   isAdmin: boolean;
+  refreshAccessToken: () => Promise<string | null>;
+  getValidAccessToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,7 +46,75 @@ function decodeExp(token: string | null): number | null {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const router = useRouter();
+
+  // Function to refresh access token
+  const refreshAccessToken = useCallback(async (): Promise<string | null> => {
+    if (isRefreshing) return null; // Prevent multiple simultaneous refresh attempts
+    
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return null;
+
+    try {
+      setIsRefreshing(true);
+      
+      // Check if refresh token is expired
+      const refreshExp = decodeExp(refreshToken);
+      const nowSec = Math.floor(Date.now() / 1000);
+      
+      if (refreshExp !== null && refreshExp <= nowSec) {
+        // Refresh token expired, logout user
+        logout();
+        return null;
+      }
+
+      // Call refresh endpoint
+      const response = await fetch('/api/users/token/refresh/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refresh: refreshToken }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh token');
+      }
+
+      const data = await response.json();
+      const newAccessToken = data.access;
+      
+      // Update stored access token
+      localStorage.setItem('accessToken', newAccessToken);
+      
+      return newAccessToken;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      logout();
+      return null;
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [isRefreshing]);
+
+  // Function to get valid access token (with automatic refresh)
+  const getValidAccessToken = useCallback(async (): Promise<string | null> => {
+    const accessToken = localStorage.getItem('accessToken');
+    
+    if (!accessToken) return null;
+
+    // Check if access token is expired or about to expire (within 1 minute)
+    const accessExp = decodeExp(accessToken);
+    const nowSec = Math.floor(Date.now() / 1000);
+    
+    if (accessExp !== null && accessExp <= nowSec + 60) {
+      // Token expired or expiring soon, try to refresh
+      return await refreshAccessToken();
+    }
+    
+    return accessToken;
+  }, [refreshAccessToken]);
 
   useEffect(() => {
     const accessToken = localStorage.getItem('accessToken');
@@ -118,6 +188,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
     updateUser,
     isAdmin,
+    refreshAccessToken,
+    getValidAccessToken, // Expose this for components to use
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

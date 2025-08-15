@@ -7,6 +7,7 @@ import { Input } from "@heroui/input";
 import { getApiUrl, API_CONFIG } from "@/config/api";
 import { useRouter } from "next/navigation";
 import { useUrls } from "@/hooks/use-urls";
+import { useAuth } from "@/contexts/auth-context";
 
 function slugify(input: string): string {
   return input
@@ -22,13 +23,14 @@ export default function CreateUrlPage() {
   const [newUrl, setNewUrl] = useState({ original_url: "", title: "", expires_at: "", short_code: "" });
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string>("");
+  const { getValidAccessToken } = useAuth();
 
   // Get the 3 latest URLs
   const latestUrls = urls ? urls.slice(0, 3) : [];
 
   const downloadQr = useCallback(async (id: number, title?: string | null) => {
-    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-    if (!accessToken) {
+    const token = await getValidAccessToken();
+    if (!token) {
       router.push('/login');
       return;
     }
@@ -37,7 +39,7 @@ export default function CreateUrlPage() {
       const resp = await fetch(`${API_CONFIG.BASE_URL}/api/urls/${id}/qr-download/`, {
         method: 'GET',
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       if (!resp.ok) {
@@ -72,14 +74,14 @@ export default function CreateUrlPage() {
     } catch (e) {
       console.error('QR download error:', e);
     }
-  }, [router]);
+  }, [router, getValidAccessToken]);
 
   // Memoized create URL handler
   const handleCreateUrl = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) {
+    const token = await getValidAccessToken();
+    if (!token) {
       setMessage("No access token found. Please log in again.");
       return;
     }
@@ -101,7 +103,7 @@ export default function CreateUrlPage() {
     let response = await fetch(getApiUrl("URLS"), {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
         Accept: "application/json",
       },
@@ -111,50 +113,20 @@ export default function CreateUrlPage() {
     });
 
     if (response.status === 401) {
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (refreshToken) {
-        try {
-          const refreshResponse = await fetch(getApiUrl('LOGIN').replace('/login/', '/token/refresh/'), {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            mode: 'cors',
-            credentials: 'omit',
-            body: JSON.stringify({
-              refresh: refreshToken
-            }),
-          });
-
-          if (refreshResponse.ok) {
-            const refreshData = await refreshResponse.json();
-            localStorage.setItem('accessToken', refreshData.access);
-            response = await fetch(getApiUrl("URLS"), {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${refreshData.access}`,
-                "Content-Type": "application/json",
-                Accept: "application/json",
-              },
-              mode: "cors",
-              credentials: "omit",
-              body: JSON.stringify(payload),
-            });
-          } else {
-            setMessage("Authentication failed. Please log in again.");
-            setSubmitting(false);
-            return;
-          }
-        } catch (error) {
-          setMessage("Authentication failed. Please log in again.");
-          setSubmitting(false);
-          return;
-        }
-      } else {
-        setMessage("Authentication failed. Please log in again.");
-        setSubmitting(false);
-        return;
+      // Try to refresh token and retry once
+      const newToken = await getValidAccessToken();
+      if (newToken && newToken !== token) {
+        response = await fetch(getApiUrl("URLS"), {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${newToken}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          mode: "cors",
+          credentials: "omit",
+          body: JSON.stringify(payload),
+        });
       }
     }
     
@@ -170,7 +142,7 @@ export default function CreateUrlPage() {
       setMessage(errorText || `Failed to create short URL: ${response.status}`);
     }
     setSubmitting(false);
-  }, [newUrl, mutate, router]);
+  }, [newUrl, mutate, router, getValidAccessToken]);
 
   return (
     <div className="p-6">
