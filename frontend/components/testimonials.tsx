@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
-import { safeArray, safeMap } from "@/lib/safe-arrays";
+import { safeMap } from "@/lib/safe-arrays";
 
 export default function Testimonials() {
   const testimonials = [
@@ -93,10 +93,7 @@ export default function Testimonials() {
 
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full flex items-center justify-center text-sm font-medium border border-primary/20">
-                    {testimonial.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
+                    {safeMap(testimonial.name.split(" "), (n) => n[0]).join("")}
                   </div>
                   <div>
                     <h4 className="font-semibold text-sm">

@@ -8,7 +8,7 @@ import { useUrls } from "@/hooks/use-urls";
 import type { ShortenedURL } from "@/hooks/use-urls";
 import { useRouter } from "next/navigation";
 import { API_CONFIG } from "@/config/api";
-import { safeArray, safeFilter, safeMap, safeEvery } from "@/lib/safe-arrays";
+import { safeArray, safeFilter, safeEvery, safeMap } from "@/lib/safe-arrays";
 
 function normalize(text: string | null | undefined): string {
   return (text || "").toLowerCase();
@@ -28,7 +28,7 @@ export default function UrlsPage() {
   const filteredUrls: ShortenedURL[] = useMemo(() => {
     const source = safeArray(urls);
 
-    const tokens = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const tokens = safeFilter(search.trim().toLowerCase().split(/\s+/), Boolean);
 
     return safeFilter(source, (u: ShortenedURL) => {
       // Date filter: match created_at date to filterDate
@@ -117,7 +117,7 @@ export default function UrlsPage() {
                       <TableColumn className="w-[10%] text-right">Actions</TableColumn>
                     </TableHeader>
                     <TableBody>
-                      {filteredUrls.map((url) => (
+                      {safeMap(filteredUrls, (url) => (
                         <TableRow key={url.id}>
                           <TableCell>
                             <p className="font-medium truncate max-w-[220px]">{url.title || "Untitled"}</p>

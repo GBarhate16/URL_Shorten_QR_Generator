@@ -8,7 +8,7 @@ import { getApiUrl, API_CONFIG } from "@/config/api";
 import { useRouter } from "next/navigation";
 import { useUrls } from "@/hooks/use-urls";
 import { useAuth } from "@/contexts/auth-context";
-import { safeSlice } from "@/lib/safe-arrays";
+import { safeSlice, safeMap } from "@/lib/safe-arrays";
 
 function slugify(input: string): string {
   return input
@@ -229,7 +229,7 @@ export default function CreateUrlPage() {
                   <TableColumn className="w-[10%] text-right">Actions</TableColumn>
                 </TableHeader>
                 <TableBody>
-                  {latestUrls.map((url) => (
+                  {safeMap(latestUrls, (url) => (
                     <TableRow key={url.id}>
                       <TableCell>
                         <p className="font-medium truncate max-w-[220px]">{url.title || "Untitled"}</p>

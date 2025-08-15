@@ -113,7 +113,7 @@ export default function AnalyticsCharts({ analytics, loading, error, range, setR
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <h2 className="text-xl font-semibold">Analytics</h2>
         <div className="flex items-center gap-2 flex-wrap">
-          {(["7d", "30d", "90d", "180d", "365d"] as AnalyticsRange[]).map((r) => (
+          {safeMap((["7d", "30d", "90d", "180d", "365d"] as AnalyticsRange[]), (r) => (
             <Button key={r} size="sm" variant={range === r ? "solid" : "flat"} color="primary" onPress={() => setRange(r)}>
               {r.toUpperCase()}
             </Button>

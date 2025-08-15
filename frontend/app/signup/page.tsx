@@ -102,7 +102,7 @@ export default function SignupPage() {
 
         // Special-case: map password mismatch to confirm field if present
         if (
-          (safeArray(data.non_field_errors as string[]).some((m: string) => m.toLowerCase().includes("match"))) ||
+          (safeSome(safeArray(data.non_field_errors as string[]), (m: string) => m.toLowerCase().includes("match"))) ||
           (safeSome(generalErrors, (m) => m.toLowerCase().includes("match")))
         ) {
           nextFieldErrors.password2 = ["Passwords do not match."];

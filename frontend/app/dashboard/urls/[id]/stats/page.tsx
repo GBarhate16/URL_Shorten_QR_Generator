@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
 import { Button } from "@heroui/button";
 import { API_CONFIG, getApiUrl } from "@/config/api";
-import { safeArray, safeMap, safeSlice } from "@/lib/safe-arrays";
+import { safeMap, safeSlice } from "@/lib/safe-arrays";
 
 type Click = {
   id: number;
@@ -92,16 +92,12 @@ export default function UrlStatsPage() {
     const list = clicks ?? [];
     const total = list.length;
     const uniqueIps = new Set(safeMap(list, c => c.ip_address || '')).size;
-    const uniqueReferrers = new Set(
-      safeMap(list, c => c.referrer_domain || 'direct')
-    ).size;
     const byDevice = list.reduce<Record<string, number>>((acc, c) => {
       const key = (c.device_type || 'unknown').toLowerCase();
       acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
-    const topReferrers = list
-      .map(c => c.referrer_domain || 'direct')
+    const topReferrers = safeMap(list, c => c.referrer_domain || 'direct')
       .reduce<Record<string, number>>((acc, r) => { acc[r] = (acc[r] || 0) + 1; return acc; }, {});
     return { total, uniqueIps, byDevice, topReferrers };
   }, [clicks]);
@@ -135,11 +131,11 @@ export default function UrlStatsPage() {
                 </div>
                 <div className="rounded border p-4">
                   <div className="text-sm text-muted-foreground">Devices</div>
-                  <div className="text-sm">{Object.entries(summary.byDevice).map(([k,v]) => `${k}: ${v}`).join(', ') || '—'}</div>
+                  <div className="text-sm">{safeMap(Object.entries(summary.byDevice), ([k,v]) => `${k}: ${v}`).join(', ') || '—'}</div>
                 </div>
                 <div className="rounded border p-4">
                   <div className="text-sm text-muted-foreground">Top Referrers</div>
-                  <div className="text-sm">{Object.entries(summary.topReferrers).slice(0,3).map(([k,v]) => `${k}: ${v}`).join(', ') || '—'}</div>
+                  <div className="text-sm">{safeMap(safeSlice(Object.entries(summary.topReferrers), 0, 3), ([k,v]) => `${k}: ${v}`).join(', ') || '—'}</div>
                 </div>
               </div>
             )}

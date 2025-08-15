@@ -6,7 +6,7 @@
 /**
  * Safely check if a value is an array
  */
-export function isArray(value: any): value is any[] {
+export function isArray(value: unknown): value is unknown[] {
   return Array.isArray(value);
 }
 
@@ -73,6 +73,6 @@ export function safeEvery<T>(array: T[] | undefined | null, predicate: (item: T,
 /**
  * Safely get array length
  */
-export function safeLength(array: any[] | undefined | null): number {
+export function safeLength(array: unknown[] | undefined | null): number {
   return isArray(array) ? array.length : 0;
 }
