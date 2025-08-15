@@ -92,31 +92,49 @@ TEMPLATES = [
 WSGI_APPLICATION = 'saas_url.wsgi.application'
 ASGI_APPLICATION = 'saas_url.asgi.application'
 
-# Redis configuration
-REDIS_URL = env('REDIS_URL', default='redis://127.0.0.1:6379/0')
+# Cache / Redis configuration
+# By default disable external Redis to simplify local/dev: use a no-op cache.
+# Can be re-enabled by setting CACHE_BACKEND=django_redis.cache.RedisCache and REDIS_URL.
+REDIS_URL = env('REDIS_URL', default='')
+CACHE_BACKEND = env('CACHE_BACKEND', default='django.core.cache.backends.dummy.DummyCache')
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'IGNORE_EXCEPTIONS': True,  # behave like memcache on connection errors
+if CACHE_BACKEND == 'django_redis.cache.RedisCache' and REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'IGNORE_EXCEPTIONS': True,
+            }
         }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': CACHE_BACKEND,
+        }
+    }
 
-# Channels Configuration
-# Prefer a full Redis URL for Channels; fall back to tuple host only if explicitly provided
-CHANNEL_LAYER_URL = env('CHANNEL_LAYER_URL', default=REDIS_URL)
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': env('CHANNEL_LAYER_BACKEND', default='channels_redis.core.RedisChannelLayer'),
-        'CONFIG': {
-            'hosts': [CHANNEL_LAYER_URL],
+# Channels configuration
+# Default to in‑memory channel layer (single‑process), avoiding Redis dependency.
+CHANNEL_LAYER_BACKEND = env('CHANNEL_LAYER_BACKEND', default='channels.layers.InMemoryChannelLayer')
+CHANNEL_LAYER_URL = env('CHANNEL_LAYER_URL', default='')
+if CHANNEL_LAYER_BACKEND == 'channels_redis.core.RedisChannelLayer' and CHANNEL_LAYER_URL:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [CHANNEL_LAYER_URL],
+            },
         },
-    },
-}
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        }
+    }
 
 # Database
 if DATABASE_URL and dj_database_url:

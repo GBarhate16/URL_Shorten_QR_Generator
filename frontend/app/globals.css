@@ -6,6 +6,14 @@ body {
   @apply bg-background text-foreground border-border overflow-x-hidden;
 }
 
+html {
+  overflow-x: hidden;
+  font-size: 100%; /* Ensures consistent scaling */
+}
+
+/* ========================= */
+/* THEME VARIABLES */
+/* ========================= */
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -43,12 +51,12 @@ body {
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
-  
+
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
     --muted-foreground: 0 0% 63.9%;
-    --light:#016FEE;
+    --light: #016FEE;
     --card: 0 0% 3.9%;
     --border: 0 0% 14.9%;
     --card-foreground: 0 0% 98%;
@@ -81,14 +89,72 @@ body {
   }
 }
 
+/* ========================= */
+/* BASE STYLES */
+/* ========================= */
 @layer base {
-  * { @apply border-border; }
-  body { @apply bg-background text-foreground; }
-  html, body, #__next { height: 100%; }
-  img, video { max-width: 100%; height: auto; display: block; }
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  html, body, #__next {
+    height: 100%;
+    width: 100%;
+  }
+
+  html, body, #__next, main, header {
+    max-width: 100vw;
+  }
+
+  /* Ensure containers adapt on all devices */
+  [data-sidebar="sidebar"],
+  [data-sidebar="content"],
+  [data-sidebar="header"],
+  [data-sidebar="footer"],
+  .card,
+  .container,
+  .container-responsive {
+    max-width: 100%;
+  }
+
+  /* Media elements scale naturally */
+  img, video {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
 }
 
-/* Utility fixes */
-.container-responsive { @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
-.table-wrap { @apply w-full overflow-x-auto; }
-.nowrap { white-space: nowrap; }
+/* ========================= */
+/* UTILITY FIXES */
+/* ========================= */
+
+/* Generic responsive container */
+.container-responsive {
+  @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Make wide tables scrollable on small screens */
+.table-wrap {
+  @apply w-full overflow-x-auto;
+}
+
+/* Prevent unwanted wrapping */
+.nowrap {
+  white-space: nowrap;
+}
+
+/* Ensure headings and text shrink gracefully */
+h1, h2, h3, h4, h5, h6 {
+  word-wrap: break-word;
+}
+
+/* Prevent fixed widths from breaking layout on small screens */
+[class*="w-"] {
+  min-width: 0;
+}

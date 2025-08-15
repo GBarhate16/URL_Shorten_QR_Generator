@@ -18,6 +18,22 @@ export interface ShortenedURL {
 	qr_code_download_url?: string | null;
 }
 
+// Type guards to avoid any-casts when parsing API payloads
+function isObject(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function extractArrayPayload(value: unknown): unknown[] | null {
+	if (Array.isArray(value)) return value;
+	if (isObject(value)) {
+		const results = (value as Record<string, unknown>)["results"];
+		if (Array.isArray(results)) return results;
+		const items = (value as Record<string, unknown>)["items"];
+		if (Array.isArray(items)) return items;
+	}
+	return null;
+}
+
 export function useUrls() {
 	const { isAuthenticated, getValidAccessToken } = useAuth();
 	const pathname = usePathname();
@@ -31,7 +47,9 @@ export function useUrls() {
 		const headers: Record<string, string> = { Accept: "application/json" };
 		if (token) headers.Authorization = `Bearer ${token}`;
 
-		const resp = await fetch(getApiUrl("URLS"), {
+		const url = getApiUrl("URLS");
+		console.log("[useUrls] GET", url);
+		const resp = await fetch(url, {
 			method: "GET",
 			headers,
 			mode: "cors",
@@ -57,10 +75,16 @@ export function useUrls() {
 			}
 			
 			const txt = await resp.text();
+			console.error("[useUrls] GET /urls failed", resp.status, txt);
 			throw new Error(`Failed to fetch URLs: ${resp.status} ${txt}`);
 		}
 
-		return (await resp.json()) as ShortenedURL[];
+		const data: unknown = await resp.json();
+		console.log("[useUrls] GET /urls ok, shape:", Array.isArray(data) ? "array" : typeof data);
+		const arr = extractArrayPayload(data);
+		if (arr) return arr as ShortenedURL[];
+		console.warn("[useUrls] Unexpected payload for /urls", data);
+		return [];
 	}, [getValidAccessToken]);
 
 	// Gate SWR until we have at least one token (access or refresh)

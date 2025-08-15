@@ -57,14 +57,14 @@ export default function UrlsPage() {
   }, []);
 
   return (
-    <div className="p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto w-full overflow-x-hidden px-1 sm:px-0">
         <Card>
           <CardHeader>
             <div className="flex flex-col gap-3 w-full">
               <h2 className="text-xl font-semibold">Your Shortened URLs</h2>
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                <div className="md:col-span-7">
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                <div className="sm:col-span-7">
                   <Input
                     type="text"
                     label="Search"
@@ -73,7 +73,7 @@ export default function UrlsPage() {
                     onChange={(e) => setSearch(e.target.value)}
                   />
                 </div>
-                <div className="md:col-span-3">
+                <div className="sm:col-span-3">
                   <Input
                     type="date"
                     label="Created on"
@@ -81,7 +81,7 @@ export default function UrlsPage() {
                     onChange={(e) => setFilterDate(e.target.value)}
                   />
                 </div>
-                <div className="md:col-span-2 flex gap-2">
+                <div className="sm:col-span-2 flex gap-2">
                   <Button variant="light" onPress={clearFilters}>Clear</Button>
                   <Button color="primary" variant="solid" onPress={navigateToCreateUrl}>New</Button>
                 </div>
@@ -105,7 +105,8 @@ export default function UrlsPage() {
                     No results match your filters.
                   </div>
                 ) : (
-                  <Table aria-label="Shortened URLs" className="w-full">
+                  <div className="table-wrap">
+                    <Table aria-label="Shortened URLs" className="min-w-[640px] w-full">
                     <TableHeader>
                       <TableColumn className="w-[14%]">Title</TableColumn>
                       <TableColumn className="w-[24%]">Original URL</TableColumn>
@@ -190,7 +191,8 @@ export default function UrlsPage() {
                         </TableRow>
                       ))}
                     </TableBody>
-                  </Table>
+                    </Table>
+                  </div>
                 )}
               </>
             )}

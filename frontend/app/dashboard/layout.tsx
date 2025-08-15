@@ -38,8 +38,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { unreadCount } = useNotifications();
 
   const closeMobileSidebar = useCallback(() => {
-    if (typeof window === 'undefined') return;
-    if (window.matchMedia('(max-width: 768px)').matches) {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(max-width: 768px)").matches) {
       const trigger = document.querySelector('[data-sidebar="trigger"]') as HTMLElement | null;
       trigger?.click();
     }
@@ -52,27 +52,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [loading, isAuthenticated, router]);
 
   const currentView = useMemo(() => {
-    const path = pathname.split('/').pop();
-    if (path === 'overview' || path === 'dashboard' || !path) return 'overview';
-    if (path === 'create-url') return 'create-url';
-    if (path === 'urls') return 'urls';
-    return 'overview';
+    const path = pathname.split("/").pop();
+    if (path === "overview" || path === "dashboard" || !path) return "overview";
+    if (path === "create-url") return "create-url";
+    if (path === "urls") return "urls";
+    return "overview";
   }, [pathname]);
 
   const pageTitle = useMemo(() => {
     switch (currentView) {
-      case 'overview':
-        return 'Dashboard';
-      case 'create-url':
-        return 'Create URL';
-      case 'urls':
-        return 'Your URLs';
+      case "overview":
+        return "Dashboard";
+      case "create-url":
+        return "Create URL";
+      case "urls":
+        return "Your URLs";
       default:
-        return 'Dashboard';
+        return "Dashboard";
     }
   }, [currentView]);
 
-  const userDisplayName = useMemo(() => user?.first_name || user?.username || 'User', [user]);
+  const userDisplayName = useMemo(() => user?.first_name || user?.username || "User", [user]);
 
   const handleLogout = useCallback(() => {
     logout();
@@ -80,47 +80,56 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.replace("/login");
   }, [logout, router, closeMobileSidebar]);
 
-  if (loading || (!isAuthenticated && typeof window !== 'undefined')) {
+  if (loading || (!isAuthenticated && typeof window !== "undefined")) {
     return null; // prevent restricted page flash
   }
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <Sidebar>
+      <Sidebar className="max-w-full overflow-x-hidden [&_*]:max-w-full">
+        {/* Logo / Title */}
         <SidebarHeader>
-          <NextLink href="/" className="flex items-center gap-2 font-semibold" onClick={closeMobileSidebar}>
-            <LinkIcon className="h-6 w-6" />
-            <span>URL Shortener</span>
+          <NextLink
+            href="/"
+            className="flex items-center gap-2 font-semibold truncate"
+            onClick={closeMobileSidebar}
+          >
+            <LinkIcon className="h-6 w-6 flex-shrink-0" />
+            <span className="truncate">URL Shortener</span>
           </NextLink>
         </SidebarHeader>
+
+        {/* Navigation */}
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupLabel>Navigation</SidebarGroupLabel>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton isActive={currentView === 'overview'} asChild>
-                  <NextLink href="/dashboard/overview" prefetch={true} onClick={closeMobileSidebar}>
+                <SidebarMenuButton isActive={currentView === "overview"} asChild>
+                  <NextLink href="/dashboard/overview" prefetch onClick={closeMobileSidebar}>
                     <Home />
                     <span>Dashboard</span>
                   </NextLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton isActive={currentView === 'create-url'} asChild>
-                  <NextLink href="/dashboard/create-url" prefetch={true} onClick={closeMobileSidebar}>
+                <SidebarMenuButton isActive={currentView === "create-url"} asChild>
+                  <NextLink href="/dashboard/create-url" prefetch onClick={closeMobileSidebar}>
                     <PlusCircle />
                     <span>Create URL</span>
                   </NextLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton isActive={currentView === 'urls'} asChild>
-                  <NextLink href="/dashboard/urls" prefetch={true} onClick={closeMobileSidebar}>
+                <SidebarMenuButton isActive={currentView === "urls"} asChild>
+                  <NextLink href="/dashboard/urls" prefetch onClick={closeMobileSidebar}>
                     <BarChart />
                     <span>Your URLs</span>
                   </NextLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+
+              {/* Admin Section */}
               {isAdmin && (
                 <>
                   <SidebarSeparator />
@@ -135,7 +144,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <NextLink href="/api/users/admin/dashboard/" target="_blank" onClick={closeMobileSidebar}>
+                      <NextLink
+                        href="/api/users/admin/dashboard/"
+                        target="_blank"
+                        onClick={closeMobileSidebar}
+                      >
                         <Users />
                         <span>User Management</span>
                       </NextLink>
@@ -146,6 +159,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </SidebarMenu>
           </SidebarGroup>
         </SidebarContent>
+
+        {/* Footer */}
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -157,11 +172,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
+
+      {/* Main Content */}
       <SidebarInset>
-        <div className="sticky top-0 z-30 flex min-h-14 items-center gap-4 border-b bg-background px-4 py-2 sm:static sm:border-0 sm:px-6">
-          <SidebarTrigger className="sm:hidden text-foreground" />
-          <h1 className="text-2xl font-bold text-foreground">{pageTitle}</h1>
-          <p className="hidden sm:block text-muted-foreground">
+        <div className="sticky top-0 z-30 flex flex-wrap items-center gap-2 border-b bg-background px-3 py-2 sm:px-4 sm:static sm:border-0">
+          {/* Sidebar Toggle on Mobile */}
+          <SidebarTrigger className="text-foreground" aria-label="Toggle sidebar" />
+
+          {/* Title */}
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground truncate">
+            {pageTitle}
+          </h1>
+
+          {/* Welcome Text */}
+          <p className="hidden md:block text-sm md:text-base text-muted-foreground truncate">
             Welcome back, {userDisplayName}!
             {isAdmin && (
               <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
@@ -170,16 +194,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </span>
             )}
           </p>
-          <div className="ml-auto flex items-center gap-2">
+
+          {/* Actions */}
+          <div className="ml-auto flex flex-wrap items-center gap-2">
             <ThemeSwitcher />
             {unreadCount > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                {unreadCount} new notification{unreadCount > 1 ? 's' : ''}
+                {unreadCount} new notification{unreadCount > 1 ? "s" : ""}
               </span>
             )}
           </div>
         </div>
-        {children}
+
+        {/* Page Content */}
+        <main className="w-full max-w-full overflow-x-hidden px-3 sm:px-4 pb-6">
+          {children}
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );

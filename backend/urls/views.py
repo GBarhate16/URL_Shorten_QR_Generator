@@ -14,7 +14,6 @@ from django.utils import timezone
 from datetime import timedelta
 from django.conf import settings
 from django.utils.text import slugify
-from django.core.cache import cache
 import qrcode
 from io import BytesIO
 
@@ -25,24 +24,7 @@ from .serializers import (
     parse_user_agent,
 )
 
-# Cache helpers
-USER_URLS_KEY = lambda user_id: f"user:{user_id}:urls"
-USER_STATS_KEY = lambda user_id: f"user:{user_id}:stats"
-URL_CLICKS_KEY = lambda url_id: f"url:{url_id}:clicks"
-
-URLS_TTL = 15  # seconds
-STATS_TTL = 60
-CLICKS_TTL = 20
-ANALYTICS_TTL = 10
-
-ANALYTICS_KEY = lambda user_id, date_range: f"user:{user_id}:analytics:{date_range}"
-
-def invalidate_user_analytics_cache(user_id: int):
-    try:
-        for dr in ["7d", "30d", "90d", "180d", "365d"]:
-            cache.delete(ANALYTICS_KEY(user_id, dr))
-    except Exception:
-        pass
+"""All caching removed to simplify local setup: all endpoints hit the DB directly."""
 
 class ShortenedURLViewSet(viewsets.ModelViewSet):
     """
@@ -62,28 +44,12 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
         return ShortenedURLSerializer
     
     def list(self, request, *args, **kwargs):
-        """Cache the paginated list per user for a short TTL."""
-        try:
-            cache_key = USER_URLS_KEY(request.user.id)
-            cached = cache.get(cache_key)
-            if cached is not None:
-                return Response(cached)
-        except Exception:
-            cache_key = None
-        response = super().list(request, *args, **kwargs)
-        if cache_key:
-            try:
-                cache.set(cache_key, response.data, URLS_TTL)
-            except Exception:
-                pass
-        return response
+        """Return paginated list directly from the database."""
+        return super().list(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         """Create a new shortened URL and invalidate caches."""
         url_obj = serializer.save(user=self.request.user)
-        # Invalidate user's lists and stats
-        cache.delete_many([USER_URLS_KEY(self.request.user.id), USER_STATS_KEY(self.request.user.id)])
-        invalidate_user_analytics_cache(self.request.user.id)
         
         Notification.create_notification(
             user=self.request.user,
@@ -100,12 +66,6 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         response = super().destroy(request, *args, **kwargs)
-        cache.delete_many([
-            USER_URLS_KEY(request.user.id),
-            USER_STATS_KEY(request.user.id),
-            URL_CLICKS_KEY(instance.id),
-        ])
-        invalidate_user_analytics_cache(request.user.id)
         return response
 
     @action(detail=True, methods=['post'])
@@ -114,11 +74,6 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
         url_obj = self.get_object()
         url_obj.is_active = not url_obj.is_active
         url_obj.save()
-        cache.delete_many([
-            USER_URLS_KEY(request.user.id),
-            USER_STATS_KEY(request.user.id),
-        ])
-        invalidate_user_analytics_cache(request.user.id)
         return Response({
             'id': url_obj.id,
             'is_active': url_obj.is_active
@@ -154,27 +109,13 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
     def clicks(self, request, pk=None):
         """Get click statistics for a specific URL (cached briefly)."""
         url_obj = self.get_object()
-        cache_key = URL_CLICKS_KEY(url_obj.id)
-        cached = cache.get(cache_key)
-        if cached is not None:
-            return Response(cached)
         clicks = URLClick.objects.filter(shortened_url=url_obj)
         serializer = URLClickSerializer(clicks, many=True)
-        data = serializer.data
-        try:
-            cache.set(cache_key, data, CLICKS_TTL)
-        except Exception:
-            pass
-        return Response(data)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def stats(self, request):
         """Get overall statistics for the user's URLs (cached)."""
-        cache_key = USER_STATS_KEY(request.user.id)
-        cached = cache.get(cache_key)
-        if cached is not None:
-            return Response(cached)
-
         user = request.user
         today = timezone.now().date()
         user_urls = ShortenedURL.objects.filter(user=user)
@@ -194,10 +135,6 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
             'clicks_today': today_clicks,
             'top_urls': ShortenedURLSerializer(top_urls, many=True, context={'request': request}).data
         }
-        try:
-            cache.set(cache_key, stats_data, STATS_TTL)
-        except Exception:
-            pass
         return Response(stats_data)
 
     @action(detail=False, methods=['get'])
@@ -209,14 +146,6 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
         """
         user = request.user
         date_range = request.query_params.get('range', '30d')
-        cache_key = ANALYTICS_KEY(user.id, date_range)
-        try:
-            cached = cache.get(cache_key)
-        except Exception:
-            cached = None
-        if cached is not None:
-            return Response(cached)
-
         now = timezone.now()
         days_map = {
             '7d': 7,
@@ -304,11 +233,6 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
             'updated_at': now.isoformat(),
         }
 
-        try:
-            cache.set(cache_key, analytics_data, ANALYTICS_TTL)
-        except Exception:
-            pass
-
         return Response(analytics_data)
 
 
@@ -338,16 +262,6 @@ class URLRedirectView(APIView):
                 pass
             try:
                 self.record_click(shortened_url, request)
-            except Exception:
-                pass
-            
-            # Invalidate caches impacted by clicks
-            try:
-                cache.delete_many([
-                    USER_STATS_KEY(shortened_url.user_id),
-                    URL_CLICKS_KEY(shortened_url.id),
-                ])
-                invalidate_user_analytics_cache(shortened_url.user_id)
             except Exception:
                 pass
             

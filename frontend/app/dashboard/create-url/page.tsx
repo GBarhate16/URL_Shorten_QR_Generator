@@ -101,7 +101,9 @@ export default function CreateUrlPage() {
       payload.short_code = cleanedSlug;
     }
 
-    let response = await fetch(getApiUrl("URLS"), {
+    const postUrl = getApiUrl("URLS");
+    console.log("[CreateURL] POST", postUrl, payload);
+    let response = await fetch(postUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -117,7 +119,8 @@ export default function CreateUrlPage() {
       // Try to refresh token and retry once
       const newToken = await getValidAccessToken();
       if (newToken && newToken !== token) {
-        response = await fetch(getApiUrl("URLS"), {
+        console.log("[CreateURL] retry with refreshed token");
+        response = await fetch(postUrl, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${newToken}`,
@@ -140,14 +143,15 @@ export default function CreateUrlPage() {
       }, 1200);
     } else {
       const errorText = await response.text();
+      console.error("[CreateURL] POST failed", response.status, errorText);
       setMessage(errorText || `Failed to create short URL: ${response.status}`);
     }
     setSubmitting(false);
   }, [newUrl, mutate, router, getValidAccessToken]);
 
   return (
-    <div className="p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6">
+      <div className="max-w-7xl mx-auto space-y-6 w-full overflow-x-hidden">
         {/* Create URL Form */}
         <Card>
           <CardHeader>
@@ -155,13 +159,20 @@ export default function CreateUrlPage() {
           </CardHeader>
           <CardBody>
             <form onSubmit={handleCreateUrl} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Input 
                   type="url" 
                   label="Original URL" 
                   placeholder="https://example.com" 
                   value={newUrl.original_url} 
                   onChange={(e) => setNewUrl({ ...newUrl, original_url: e.target.value })} 
+                  className="w-full min-w-0"
+                  fullWidth
+                  classNames={{
+                    base: "min-w-0 w-full",
+                    inputWrapper: "min-w-0 w-full",
+                    input: "min-w-0 w-full",
+                  }}
                   required 
                 />
                 <Input 
@@ -170,6 +181,13 @@ export default function CreateUrlPage() {
                   placeholder="My Website" 
                   value={newUrl.title} 
                   onChange={(e) => setNewUrl({ ...newUrl, title: e.target.value })} 
+                  className="w-full min-w-0"
+                  fullWidth
+                  classNames={{
+                    base: "min-w-0 w-full",
+                    inputWrapper: "min-w-0 w-full",
+                    input: "min-w-0 w-full",
+                  }}
                 />
                 <Input 
                   type="text" 
@@ -177,6 +195,13 @@ export default function CreateUrlPage() {
                   placeholder="my-custom-slug" 
                   value={newUrl.short_code} 
                   onChange={(e) => setNewUrl({ ...newUrl, short_code: e.target.value })}
+                  className="w-full min-w-0"
+                  fullWidth
+                  classNames={{
+                    base: "min-w-0 w-full",
+                    inputWrapper: "min-w-0 w-full",
+                    input: "min-w-0 w-full",
+                  }}
                   description="Allowed: letters, digits, hyphen (-) and underscore (_)"
                 />
                 <Input 
@@ -185,6 +210,13 @@ export default function CreateUrlPage() {
                   placeholder="Select date & time" 
                   value={newUrl.expires_at} 
                   onChange={(e) => setNewUrl({ ...newUrl, expires_at: e.target.value })} 
+                  className="w-full min-w-0"
+                  fullWidth
+                  classNames={{
+                    base: "min-w-0 w-full",
+                    inputWrapper: "min-w-0 w-full",
+                    input: "min-w-0 w-full",
+                  }}
                 />
               </div>
               <div className="flex items-center gap-4">
