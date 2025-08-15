@@ -1,5 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
+import { safeMap } from "@/lib/safe-arrays";
 
 export default function Stats() {
   const stats = [
@@ -13,7 +14,7 @@ export default function Stats() {
     <section className="py-20 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {stats.map((stat, index) => (
+          {safeMap(stats, (stat, index) => (
             <motion.div
               key={index}
               initial={{ y: 20, opacity: 0 }}

@@ -8,6 +8,7 @@ import { getApiUrl, API_CONFIG } from "@/config/api";
 import { useRouter } from "next/navigation";
 import { useUrls } from "@/hooks/use-urls";
 import { useAuth } from "@/contexts/auth-context";
+import { safeSlice } from "@/lib/safe-arrays";
 
 function slugify(input: string): string {
   return input
@@ -26,7 +27,7 @@ export default function CreateUrlPage() {
   const { getValidAccessToken } = useAuth();
 
   // Get the 3 latest URLs
-  const latestUrls = urls ? urls.slice(0, 3) : [];
+  const latestUrls = safeSlice(urls, 0, 3);
 
   const downloadQr = useCallback(async (id: number, title?: string | null) => {
     const token = await getValidAccessToken();

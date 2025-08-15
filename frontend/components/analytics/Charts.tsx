@@ -5,6 +5,7 @@ import type { AnalyticsResponse, AnalyticsRange } from "@/hooks/use-analytics";
 import { Button } from "@heroui/button";
 import { BarChart2, Globe, MonitorSmartphone, MousePointerClick, Link2, RefreshCcw } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { safeArray, safeMap } from "@/lib/safe-arrays";
 import {
   ResponsiveContainer,
   LineChart,
@@ -35,18 +36,19 @@ interface ChartsProps {
 export default function AnalyticsCharts({ analytics, loading, error, range, setRange, stats, onRefresh }: ChartsProps) {
   const [activeTab, setActiveTab] = useState<'countries' | 'devices' | 'browsers' | 'referrers'>('countries');
   const isMobile = useIsMobile();
+  
   const seriesData = useMemo(() => {
     if (!analytics || !analytics.series) return { urls: [], clicks: [] };
     
     const formatDate = (iso: string) => new Date(iso).toLocaleDateString();
     
-    // Ensure the arrays exist before calling .map()
-    const urlsCreated = Array.isArray(analytics.series.urls_created) ? analytics.series.urls_created : [];
-    const clicks = Array.isArray(analytics.series.clicks) ? analytics.series.clicks : [];
+    // Use safe array functions
+    const urlsCreated = safeArray(analytics.series.urls_created);
+    const clicks = safeArray(analytics.series.clicks);
     
     return {
-      urls: urlsCreated.map((p) => ({ date: formatDate(p.date), count: p.count })),
-      clicks: clicks.map((p) => ({ date: formatDate(p.date), count: p.count })),
+      urls: safeMap(urlsCreated, (p) => ({ date: formatDate(p.date), count: p.count })),
+      clicks: safeMap(clicks, (p) => ({ date: formatDate(p.date), count: p.count })),
     };
   }, [analytics]);
 
@@ -200,7 +202,7 @@ export default function AnalyticsCharts({ analytics, loading, error, range, setR
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={analytics.breakdowns.devices} dataKey="count" nameKey="label" innerRadius={isMobile ? 36 : 50} outerRadius={isMobile ? 60 : 80}>
-                      {analytics.breakdowns.devices.map((_, idx) => (
+                      {safeMap(analytics.breakdowns.devices, (_, idx) => (
                         <Cell key={idx} fill={palette[idx % palette.length]} />
                       ))}
                     </Pie>
@@ -216,7 +218,7 @@ export default function AnalyticsCharts({ analytics, loading, error, range, setR
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={analytics.breakdowns.browsers} dataKey="count" nameKey="label" innerRadius={isMobile ? 36 : 50} outerRadius={isMobile ? 60 : 80}>
-                      {analytics.breakdowns.browsers.map((_, idx) => (
+                      {safeMap(analytics.breakdowns.browsers, (_, idx) => (
                         <Cell key={idx} fill={palette[idx % palette.length]} />
                       ))}
                     </Pie>

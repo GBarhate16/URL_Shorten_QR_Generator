@@ -23,6 +23,7 @@ import {
   ChevronDownIcon,
 } from "@radix-ui/react-icons";
 import { useRouter } from "next/navigation";
+import { safeMap } from "@/lib/safe-arrays";
 
 export default function NavBar() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -161,8 +162,8 @@ export default function NavBar() {
           </NavbarItem>
         </NavbarContent>
         <NavbarMenu>
-          {menuItems.map((item, index) => (
-            <NavbarMenuItem key={`${item}-${index}`}>
+          {safeMap(menuItems, (item, index) => (
+            <NavbarMenuItem key={`${item.name}-${index}`}>
               <NextLink
                 className="w-full"
                 href={item.href}

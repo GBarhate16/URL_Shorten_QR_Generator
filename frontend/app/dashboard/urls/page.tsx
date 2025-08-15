@@ -8,6 +8,7 @@ import { useUrls } from "@/hooks/use-urls";
 import type { ShortenedURL } from "@/hooks/use-urls";
 import { useRouter } from "next/navigation";
 import { API_CONFIG } from "@/config/api";
+import { safeArray, safeFilter, safeMap, safeEvery } from "@/lib/safe-arrays";
 
 function normalize(text: string | null | undefined): string {
   return (text || "").toLowerCase();
@@ -25,11 +26,11 @@ export default function UrlsPage() {
   }, [router]);
 
   const filteredUrls: ShortenedURL[] = useMemo(() => {
-    const source: ShortenedURL[] = urls ?? [];
+    const source = safeArray(urls);
 
     const tokens = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
 
-    return source.filter((u: ShortenedURL) => {
+    return safeFilter(source, (u: ShortenedURL) => {
       // Date filter: match created_at date to filterDate
       if (filterDate) {
         const createdISO = new Date(u.created_at).toISOString().slice(0, 10);
@@ -46,7 +47,7 @@ export default function UrlsPage() {
       ].join(" ");
 
       // All tokens must be present (word-to-word AND search)
-      return tokens.every((t) => haystack.includes(t));
+      return safeEvery(tokens, (t) => haystack.includes(t));
     });
   }, [urls, search, filterDate, getFullShortUrl]);
 

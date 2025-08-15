@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, AlertCircle, X } from "lucide-react";
+import { safeArray, safeFilter, safeMap } from "@/lib/safe-arrays";
 
 export interface NotificationProps {
   id: string;
@@ -91,7 +92,7 @@ export function NotificationContainer() {
   };
 
   const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
+    setNotifications(prev => safeFilter(safeArray(prev), notification => notification.id !== id));
   };
 
   // Expose addNotification globally for easy access
@@ -101,7 +102,7 @@ export function NotificationContainer() {
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2">
-      {notifications.map((notification) => (
+      {safeMap(notifications, (notification) => (
         <Notification key={notification.id} {...notification} />
       ))}
     </div>

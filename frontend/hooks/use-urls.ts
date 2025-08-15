@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { getApiUrl } from "@/config/api";
 import useSWR from "swr";
 import { usePathname } from "next/navigation";
+import { safeArray, safeSlice, safeMap, safeReduce, safeFilter } from "@/lib/safe-arrays";
 
 export interface ShortenedURL {
 	id: number;
@@ -101,23 +102,23 @@ export function useUrls() {
 	);
 
 	const stats = useMemo(() => {
-		if (!urls || !Array.isArray(urls)) return { totalUrls: 0, totalClicks: 0, activeUrls: 0 };
+		const safeUrls = safeArray(urls);
 		return {
-			totalUrls: urls.length,
-			totalClicks: urls.reduce((total, url) => total + url.click_count, 0),
-			activeUrls: urls.filter(url => !url.expires_at || new Date(url.expires_at) > new Date()).length
+			totalUrls: safeUrls.length,
+			totalClicks: safeReduce(safeUrls, (total, url) => total + url.click_count, 0),
+			activeUrls: safeFilter(safeUrls, url => !url.expires_at || new Date(url.expires_at) > new Date()).length
 		};
 	}, [urls]);
 
 	const recentUrls = useMemo(() => {
-		return urls && Array.isArray(urls) ? urls.slice(0, 5) : [];
+		return safeSlice(urls, 0, 5);
 	}, [urls]);
 
 	const updateUrlClickCount = useCallback((urlId: number, newClickCount: number) => {
 		mutate(
 			(current) => {
-				if (!current || !Array.isArray(current)) return current;
-				return current.map(url => (url.id === urlId ? { ...url, click_count: newClickCount } : url));
+				const safeCurrent = safeArray(current);
+				return safeMap(safeCurrent, url => (url.id === urlId ? { ...url, click_count: newClickCount } : url));
 			},
 			false
 		);

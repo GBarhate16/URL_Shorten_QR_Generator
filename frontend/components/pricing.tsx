@@ -3,6 +3,7 @@ import { Card, CardBody, CardFooter } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Divider } from "@heroui/divider";
 import { motion } from "framer-motion";
+import { safeMap } from "@/lib/safe-arrays";
 
 export default function Pricing() {
   // Pricing content updated for SaaS URL. Design unchanged intentionally.
@@ -68,7 +69,7 @@ export default function Pricing() {
         </p>
       </div>
       <div className="mt-16 gap-10 grid lg:grid-cols-3 place-content-center">
-        {plans.map((item, idx) => (
+        {safeMap(plans, (item, idx) => (
           <Card
             key={idx}
             shadow="none"
@@ -103,7 +104,7 @@ export default function Pricing() {
                     Includes
                   </span>
                   <ul className="flex flex-col gap-2">
-                    {item.features.map((feature, index) => (
+                    {safeMap(item.features, (feature, index) => (
                       <li key={index} className="text-sm font-light">
                         {feature}
                       </li>

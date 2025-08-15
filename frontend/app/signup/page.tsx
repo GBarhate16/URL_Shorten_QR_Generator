@@ -9,6 +9,7 @@ import NextLink from "next/link";
 import { EyeOpenIcon, EyeNoneIcon } from "@radix-ui/react-icons";
 import { UserPlus, User, Mail, KeyRound, Home } from "lucide-react";
 import { getApiUrl } from "@/config/api";
+import { safeArray, safeSome } from "@/lib/safe-arrays";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -101,9 +102,8 @@ export default function SignupPage() {
 
         // Special-case: map password mismatch to confirm field if present
         if (
-          (data?.non_field_errors && Array.isArray(data.non_field_errors) &&
-            (data.non_field_errors as string[]).some((m: string) => m.toLowerCase().includes("match"))) ||
-          (generalErrors.some((m) => m.toLowerCase().includes("match")))
+          (safeArray(data.non_field_errors as string[]).some((m: string) => m.toLowerCase().includes("match"))) ||
+          (safeSome(generalErrors, (m) => m.toLowerCase().includes("match")))
         ) {
           nextFieldErrors.password2 = ["Passwords do not match."];
         }

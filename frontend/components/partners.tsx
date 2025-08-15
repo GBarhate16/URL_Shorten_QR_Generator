@@ -1,6 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 import { Tooltip } from "@heroui/tooltip";
+import { safeMap } from "@/lib/safe-arrays";
 
 export default function Partners() {
   // svg icons provided by https://svgl.app/
@@ -210,7 +211,7 @@ export default function Partners() {
         </h2>
       </motion.div>
       <div className="w-full grid grid-cols-3 sm:grid-cols-6 grid-rows-3 sm:grid-rows-1 gap-5 place-items-center">
-        {icons.map((icon, index) => (
+        {safeMap(icons, (icon, index) => (
           <Tooltip content={icon.name} key={icon.name}>
             <motion.div
               initial={{ y: 20, opacity: 0, filter: "blur(3px)" }}

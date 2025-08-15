@@ -1,5 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
+import { safeArray, safeMap } from "@/lib/safe-arrays";
 
 export default function Testimonials() {
   const testimonials = [
@@ -66,7 +67,7 @@ export default function Testimonials() {
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {testimonials.map((testimonial, index) => (
+          {safeMap(testimonials, (testimonial, index) => (
             <motion.div
               key={index}
               initial={{ y: 20, opacity: 0 }}
@@ -81,7 +82,7 @@ export default function Testimonials() {
             >
               <div className="p-6 h-full rounded-xl bg-card border border-border transition-colors duration-300 flex flex-col">
                 <div className="flex mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
+                  {safeMap([...Array(testimonial.rating)], (_, i) => (
                     <StarIcon key={i} />
                   ))}
                 </div>

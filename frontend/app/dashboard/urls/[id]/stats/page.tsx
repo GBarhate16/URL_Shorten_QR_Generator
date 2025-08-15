@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
 import { Button } from "@heroui/button";
 import { API_CONFIG, getApiUrl } from "@/config/api";
+import { safeArray, safeMap, safeSlice } from "@/lib/safe-arrays";
 
 type Click = {
   id: number;
@@ -90,7 +91,10 @@ export default function UrlStatsPage() {
   const summary = useMemo(() => {
     const list = clicks ?? [];
     const total = list.length;
-    const uniqueIps = new Set(list.map(c => c.ip_address || '')).size;
+    const uniqueIps = new Set(safeMap(list, c => c.ip_address || '')).size;
+    const uniqueReferrers = new Set(
+      safeMap(list, c => c.referrer_domain || 'direct')
+    ).size;
     const byDevice = list.reduce<Record<string, number>>((acc, c) => {
       const key = (c.device_type || 'unknown').toLowerCase();
       acc[key] = (acc[key] || 0) + 1;
@@ -165,7 +169,7 @@ export default function UrlStatsPage() {
                   <TableColumn className="w-[20%]">Location</TableColumn>
                 </TableHeader>
                 <TableBody>
-                  {clicks.map((c) => (
+                  {safeMap(clicks, (c) => (
                     <TableRow key={c.id}>
                       <TableCell>{new Date(c.clicked_at).toLocaleString()}</TableCell>
                       <TableCell>{c.ip_address || '—'}</TableCell>

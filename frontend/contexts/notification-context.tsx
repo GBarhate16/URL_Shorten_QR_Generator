@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { safeArray, safeSlice, safeMap, safeFilter } from "@/lib/safe-arrays";
 
 interface Notification {
   id: number;
@@ -25,16 +26,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const addNotification = useCallback((notification: Notification) => {
-    setNotifications(prev => [notification, ...prev].slice(0, 10));
+    setNotifications(prev => safeSlice([notification, ...safeArray(prev)], 0, 10));
   }, []);
 
-  const markAsRead = useCallback((id: number) => {
-    setNotifications(prev => prev.map(n => (n.id === id ? { ...n, is_read: true } : n)));
+  const markAsRead = useCallback((id: string) => {
+    setNotifications(prev => safeMap(safeArray(prev), n => (n.id === id ? { ...n, is_read: true } : n)));
   }, []);
 
   const clearNotifications = useCallback(() => setNotifications([]), []);
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const unreadCount = safeFilter(notifications, n => !n.is_read).length;
 
   const value: NotificationContextType = {
     notifications,

@@ -1,6 +1,7 @@
 "use client";
 import { Accordion, AccordionItem } from "@heroui/accordion";
 import { motion } from "framer-motion";
+import { safeMap } from "@/lib/safe-arrays";
 
 export default function Faq() {
   const accordionItems = [
@@ -107,7 +108,7 @@ export default function Faq() {
             },
           }}
         >
-          {accordionItems.map((item, index) => (
+          {safeMap(accordionItems, (item, index) => (
             <AccordionItem
               key={index}
               aria-label={item.title}

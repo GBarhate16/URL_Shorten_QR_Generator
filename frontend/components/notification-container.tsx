@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNotifications } from '@/contexts/notification-context';
 import { NotificationToast } from './notification-toast';
+import { safeArray, safeFilter, safeMap } from "@/lib/safe-arrays";
 
 export function NotificationContainer() {
   const { notifications } = useNotifications();
@@ -11,7 +12,7 @@ export function NotificationContainer() {
     // Add new notifications to active set (ES5-compatible iteration)
     const current = new Set<number>();
     activeNotifications.forEach(id => current.add(id));
-    const toAdd = notifications.filter(n => !current.has(n.id)).map(n => n.id);
+    const toAdd = safeFilter(notifications, n => !current.has(n.id)).map(n => n.id);
     if (toAdd.length > 0) {
       setActiveNotifications(prev => {
         const merged = new Set<number>();
@@ -30,11 +31,11 @@ export function NotificationContainer() {
     });
   };
 
-  const activeNotificationList = notifications.filter(n => activeNotifications.has(n.id));
+  const activeNotificationList = safeFilter(notifications, n => activeNotifications.has(n.id));
 
   return (
     <div className="fixed top-4 left-4 z-50 space-y-2">
-      {activeNotificationList.map((notification, index) => (
+      {safeMap(activeNotificationList, (notification, index) => (
         <div
           key={notification.id}
           style={{
