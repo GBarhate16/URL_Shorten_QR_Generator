@@ -27,13 +27,17 @@ export default function Hero() {
           className="flex flex-col justify-center items-center space-y-5 max-w-4xl mx-auto text-center"
         >
           <span className="w-fit h-full text-sm bg-card px-2 py-1 border border-border rounded-full">
-            Powerful URL Shortener & Analytics
+            Powerful URL Shortener, QR Generator, & Analytics
           </span>
           <h1 className="text-4xl font-medium tracking-tighter mx-auto md:text-6xl text-pretty bg-gradient-to-b from-sky-800 dark:from-sky-100 to-foreground dark:to-foreground bg-clip-text text-transparent">
-            Shorten Links. Track Clicks. Grow Faster.
+            Shorten Links. Generate QR&apos;s. 
           </h1>
+
+          <h4 className="text-lg font-medium tracking-tighter mx-auto md:text-4xl text-pretty bg-gradient-to-b from-sky-800 dark:from-sky-100 to-foreground dark:to-foreground bg-clip-text text-transparent">
+            Track Clicks and Scans. Grow Faster.
+          </h4>
           <p className="max-w-2xl text-lg mx-auto text-muted-foreground text-balance">
-            Create branded short links, share anywhere, and monitor performance in real time with device, location, and referrer insights.
+            Create branded short links and QR codes, share anywhere, and monitor performance in real time with device, location, and referrer insights.
           </p>
           <motion.div
             whileHover={{ scale: 1.05 }}

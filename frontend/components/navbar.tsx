@@ -56,7 +56,7 @@ export default function NavBar() {
               href="/"
               className="font-light tracking-tighter text-inherit text-xl"
             >
-              SaaS URL
+              SaaS 
             </NextLink>
           </NavbarBrand>
         </NavbarContent>
@@ -75,11 +75,11 @@ export default function NavBar() {
               href="/"
               className="font-light tracking-tighter text-3xl md:text-4xl flex gap-3 justify-center items-center"
             >
-              SaaS URL
+              SaaS 
             </NextLink>
           </NavbarBrand>
           <NavbarItem>
-            <Button
+            {/* <Button
               as={NextLink}
               href="#pricing"
               variant="light"
@@ -87,9 +87,9 @@ export default function NavBar() {
               className="text-base md:text-lg font-medium"
             >
               Pricing
-            </Button>
+            </Button> */}
           </NavbarItem>
-          <NavbarItem>
+          {/* <NavbarItem>
             <Button
               as={NextLink}
               href="#testimonials"
@@ -99,7 +99,7 @@ export default function NavBar() {
             >
               Testimonials
             </Button>
-          </NavbarItem>
+          </NavbarItem> */}
         </NavbarContent>
         <NavbarContent justify="end">
           {isAuthenticated ? (

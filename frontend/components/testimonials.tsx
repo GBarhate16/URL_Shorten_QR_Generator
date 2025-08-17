@@ -6,10 +6,10 @@ export default function Testimonials() {
   const testimonials = [
     {
       name: "Ava Patel",
-      role: "Growth Lead, BrightLabs",
+      role: "Marketing Lead, BrightLabs",
       avatar: "",
       content:
-        "We replaced our old link tool with SaaS URL and saw a 32% increase in campaign CTR. The real-time analytics are gold.",
+        "Shortend made it effortless to create branded short links and QR codes for our campaigns. Our click-through rates jumped by 30%, and tracking scans in real time is a game changer.",
       rating: 5,
     },
     {
@@ -17,15 +17,15 @@ export default function Testimonials() {
       role: "Founder, NudgeAI",
       avatar: "",
       content:
-        "Branded links + device/location breakdowns helped us fine-tune ads in days, not weeks. It just works.",
+        "We use Shortend to generate QR codes for all our print materials and events. The analytics dashboard shows exactly where and when people scan, helping us optimize our outreach.",
       rating: 5,
     },
     {
       name: "Mia Garcia",
-      role: "PM, StreamWave",
+      role: "Product Manager, StreamWave",
       avatar: "",
       content:
-        "The dashboard is clean and fast. Our team checks clicks live during launches. Huge confidence boost.",
+        "The link shortening and QR code features are super intuitive. Our team loves the ability to customize URLs and monitor performance instantly during launches.",
       rating: 5,
     },
     {
@@ -33,7 +33,7 @@ export default function Testimonials() {
       role: "CTO, StackFlow",
       avatar: "",
       content:
-        "Simple API, reliable redirects, zero downtime so far. Exactly what we needed for scale.",
+        "Shortend's API is reliable and easy to integrate. We generate thousands of short links and QR codes every week with zero downtime. Perfect for scaling.",
       rating: 5,
     },
   ];
@@ -61,9 +61,6 @@ export default function Testimonials() {
           <h2 className="text-xl font-semibold sm:text-2xl bg-gradient-to-b from-foreground to-muted-foreground text-transparent bg-clip-text">
             Loved by Teams Worldwide
           </h2>
-          <p className="mx-auto max-w-xl text-muted-foreground text-center">
-            Join thousands of companies that trust our platform.
-          </p>
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

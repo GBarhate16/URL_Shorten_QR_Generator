@@ -6,42 +6,42 @@ import { safeMap } from "@/lib/safe-arrays";
 export default function Faq() {
   const accordionItems = [
     {
-      title: "How accurate are your analytics?",
+      title: "How accurate is your link and QR code analytics?",
       content: (
         <div className="text-muted-foreground">
-          We count every redirect server-side and enrich with device, browser, referrer and best-effort geolocation. In production, enable <code>CF-Connecting-IP</code> (or <code>X-Forwarded-For</code>) so we can resolve public IPs behind proxies.
+          We track every short link redirect and QR code scan on the server, providing real-time analytics including device, browser, referrer, and approximate location. For best results, enable <code>CF-Connecting-IP</code> or <code>X-Forwarded-For</code> headers to improve IP-based geolocation accuracy.
         </div>
       ),
     },
     {
-      title: "Do you support branded links and custom slugs?",
+      title: "Can I use my own domain or customize short URLs?",
       content: (
         <div className="text-muted-foreground">
-          Yes. You can define custom slugs on creation, and configure a custom domain for fully branded short links.
+          Absolutely! You can set up your own branded domain for short links and choose custom slugs for both URLs and QR codes, making your links memorable and on-brand.
         </div>
       ),
     },
     {
-      title: "Can I export my data?",
+      title: "Can I export my links and analytics data?",
       content: (
         <div className="text-muted-foreground">
-          Pro and Enterprise plans include CSV export for links and click metrics. You can also query the REST API directly.
+          Yes, you can export your short links, QR codes, and analytics as CSV files on Pro and Enterprise plans. You can also access all your data programmatically via our REST API.
         </div>
       ),
     },
     {
-      title: "Is there an API?",
+      title: "Do you offer an API for link and QR code management?",
       content: (
         <div className="text-muted-foreground">
-          Absolutely. The platform is built on a documented REST API. Create links, fetch stats, and manage your account programmatically.
+          Yes! Our platform provides a fully documented REST API to create and manage short links, generate QR codes, and fetch analytics. Perfect for automation and integration into your own apps.
         </div>
       ),
     },
     {
-      title: "What about privacy and security?",
+      title: "How do you handle privacy and security?",
       content: (
         <div className="text-muted-foreground">
-          We store minimal data, honor <code>robots</code> and cache headers where applicable, and provide role-based access on Enterprise. Contact us for a security review and DPA.
+          We collect only essential data for analytics and never share your information. All links and QR codes are served securely over HTTPS. Enterprise customers can enable role-based access and request a Data Processing Agreement (DPA) or security review.
         </div>
       ),
     },

@@ -4,10 +4,10 @@ import { safeMap } from "@/lib/safe-arrays";
 
 export default function Stats() {
   const stats = [
-    { number: "120K+", label: "Links Created" },
-    { number: "4.8M", label: "Monthly Clicks" },
-    { number: "99.99%", label: "Avg. Uptime" },
-    { number: "1.2K", label: "Teams Onboarded" },
+    { number: "10K+", label: "Short URLs Generated" },
+    { number: "5K+", label: "QR Codes Created" },
+    { number: "15K+", label: "Tracked Clicks & Scans" },
+    { number: "99.99%", label: "Uptime for Redirects" },
   ];
 
   return (
