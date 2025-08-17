@@ -238,12 +238,15 @@ export function QRCodesProvider({ children }: { children: ReactNode }) {
       });
       await fetchStats();
       refreshQRAnalytics();
-      refreshDashboardData(); // Refresh all dashboard data
+      // Only refresh dashboard data if it's the first QR code (to update counts)
+      if (qrCodes.length === 0) {
+        refreshDashboardData();
+      }
       return newQrCode;
     } catch (err) {
       throw err instanceof Error ? err : new Error('Failed to create QR code');
     }
-  }, [getValidAccessToken, fetchStats, refreshQRAnalytics, refreshDashboardData]);
+  }, [getValidAccessToken, fetchStats, refreshQRAnalytics, refreshDashboardData, qrCodes.length]);
 
   const updateQrCode = useCallback(async (id: number, qrData: Partial<CreateQRCodeData>): Promise<QRCode | null> => {
     const token = await getValidAccessToken();

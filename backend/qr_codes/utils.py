@@ -40,30 +40,34 @@ class QRCodeGenerator:
             # Extract customization options
             foreground_color = customization.get('foreground_color', '#000000')
             background_color = customization.get('background_color', '#FFFFFF')
-            size = customization.get('size', 'medium')
-            error_correction = customization.get('error_correction', 'M')
-            border_width = customization.get('border_width', 4)
-            logo_url = customization.get('logo_url', '')
-            logo_size = customization.get('logo_size', 0.2)
+            size = customization.get('size', 300)  # Frontend sends pixel size
+            style = customization.get('style', 'square')
+            border = customization.get('border', False)
             
-            # Map size to box_size
-            size_map = {
-                'small': 8,
-                'medium': 10,
-                'large': 12
-            }
-            box_size = size_map.get(size, 10)
+            # Map pixel size to box_size for consistent patterns
+            if isinstance(size, int):
+                if size <= 200:
+                    box_size = 8
+                elif size <= 400:
+                    box_size = 10
+                else:
+                    box_size = 12
+            else:
+                # Handle string sizes (backward compatibility)
+                size_map = {
+                    'small': 8,
+                    'medium': 10,
+                    'large': 12
+                }
+                box_size = size_map.get(size, 10)
             
-            # Map error correction
-            error_correction_map = {
-                'L': qrcode.constants.ERROR_CORRECT_L,
-                'M': qrcode.constants.ERROR_CORRECT_M,
-                'Q': qrcode.constants.ERROR_CORRECT_Q,
-                'H': qrcode.constants.ERROR_CORRECT_H
-            }
-            error_correction_level = error_correction_map.get(error_correction, qrcode.constants.ERROR_CORRECT_M)
+            # Always use consistent error correction for reliable scanning
+            error_correction_level = qrcode.constants.ERROR_CORRECT_M
             
-            # Create QR code
+            # Consistent border width for all QR codes
+            border_width = 4
+            
+            # Create QR code with consistent parameters
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=error_correction_level,
@@ -74,12 +78,14 @@ class QRCodeGenerator:
             qr.add_data(content)
             qr.make(fit=True)
             
-            # Create image with basic styling
+            # Create image with consistent styling
             qr_image = qr.make_image(fill_color=foreground_color, back_color=background_color)
             
-            # Add logo if provided
-            if logo_url:
-                qr_image = QRCodeGenerator.add_logo(qr_image, logo_url, logo_size)
+            # Apply style modifications if needed
+            if style == 'rounded':
+                qr_image = QRCodeGenerator.apply_rounded_style(qr_image)
+            elif style == 'circle':
+                qr_image = QRCodeGenerator.apply_circle_style(qr_image)
             
             return qr_image
             
@@ -87,6 +93,28 @@ class QRCodeGenerator:
             logger.error(f"Error generating QR code: {e}")
             # Return a simple QR code as fallback
             return QRCodeGenerator.generate_simple_qr(content)
+    
+    @staticmethod
+    def apply_rounded_style(qr_image):
+        """Apply rounded corners to QR code"""
+        try:
+            # For now, return the original image
+            # In the future, this could apply rounded corner effects
+            return qr_image
+        except Exception as e:
+            logger.error(f"Error applying rounded style: {e}")
+            return qr_image
+    
+    @staticmethod
+    def apply_circle_style(qr_image):
+        """Apply circular style to QR code"""
+        try:
+            # For now, return the original image
+            # In the future, this could apply circular masking
+            return qr_image
+        except Exception as e:
+            logger.error(f"Error applying circle style: {e}")
+            return qr_image
     
     @staticmethod
     def generate_simple_qr(content):

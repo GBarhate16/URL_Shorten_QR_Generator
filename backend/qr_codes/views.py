@@ -261,17 +261,22 @@ class QRCodeRedirectView(APIView):
     def get(self, request, short_code):
         """Redirect to the actual content"""
         try:
+            logger.info(f"QR code scan attempt for short_code: {short_code}")
+            
             # Try to find dynamic QR code first
             qr_code = get_object_or_404(QRCode, short_code=short_code)
+            logger.info(f"QR code found: {qr_code.id}, type: {qr_code.qr_type}, status: {qr_code.status}")
             
             # Check if QR code is active and not expired
             if qr_code.status != 'active':
+                logger.warning(f"QR code {qr_code.id} is not active: {qr_code.status}")
                 return Response(
                     {'error': 'This QR code is not active'}, 
                     status=status.HTTP_410_GONE
                 )
             
             if qr_code.is_expired():
+                logger.warning(f"QR code {qr_code.id} has expired")
                 return Response(
                     {'error': 'This QR code has expired'}, 
                     status=status.HTTP_410_GONE
@@ -279,12 +284,15 @@ class QRCodeRedirectView(APIView):
             
             # Record scan for both dynamic and static QR codes
             self.record_scan(qr_code, request)
+            logger.info(f"Scan recorded for QR code {qr_code.id}")
             
             # For dynamic QR codes, redirect to content
             if qr_code.is_dynamic:
                 redirect_url = self.get_redirect_url(qr_code)
+                logger.info(f"Dynamic QR code {qr_code.id} redirecting to: {redirect_url}")
                 
                 if not redirect_url:
+                    logger.error(f"No redirect URL available for QR code {qr_code.id}")
                     return Response(
                         {'error': 'No content available'}, 
                         status=status.HTTP_404_NOT_FOUND
@@ -295,6 +303,7 @@ class QRCodeRedirectView(APIView):
             else:
                 # For static QR codes, return the content directly
                 content = qr_code.generate_static_content()
+                logger.info(f"Static QR code {qr_code.id} content: {content[:100]}...")
                 return Response({
                     'content': content,
                     'qr_type': qr_code.qr_type,

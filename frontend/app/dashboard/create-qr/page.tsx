@@ -80,8 +80,8 @@ export default function CreateQrPage() {
   const [selectedQrCode, setSelectedQrCode] = useState<DisplayQRCode | null>(null);
   const [showQrModal, setShowQrModal] = useState(false);
 
-  // Get the 3 latest QR codes
-  const latestQrCodes = safeSlice(qrCodes, 0, 3);
+  // Get the 5 latest QR codes for the recent section
+  const latestQrCodes = safeSlice(qrCodes, 0, 5);
   
   // Sample QR codes for demonstration (when backend is not available)
   const sampleQrCodes = [
@@ -132,6 +132,46 @@ export default function CreateQrPage() {
       qr_type: "vcard" as const,
       status: "active" as const,
       created_at: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+      customization: {},
+      content: {},
+      is_dynamic: false,
+      user: 1,
+      short_code: "",
+      redirect_url: "",
+      qr_image: "",
+      qr_image_url: "",
+      updated_at: "",
+      expires_at: "",
+      scan_count: 0,
+      files: []
+    },
+    {
+      id: 4,
+      title: "Event Invitation",
+      description: "Team building event QR code",
+      qr_type: "event" as const,
+      status: "active" as const,
+      created_at: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+      customization: {},
+      content: {},
+      is_dynamic: false,
+      user: 1,
+      short_code: "",
+      redirect_url: "",
+      qr_image: "",
+      qr_image_url: "",
+      updated_at: "",
+      expires_at: "",
+      scan_count: 0,
+      files: []
+    },
+    {
+      id: 5,
+      title: "Document Access",
+      description: "Important document download QR code",
+      qr_type: "file" as const,
+      status: "active" as const,
+      created_at: new Date(Date.now() - 345600000).toISOString(), // 4 days ago
       customization: {},
       content: {},
       is_dynamic: false,
@@ -717,6 +757,18 @@ export default function CreateQrPage() {
                      </span>
                    </div>
                  </div>
+                 {displayQrCodes.length > 0 && (
+                   <div className="mt-2">
+                     <Button
+                       size="sm"
+                       variant="light"
+                       className="text-xs h-6 px-2 bg-gray-700 hover:bg-gray-600 text-white border-gray-600"
+                       onPress={() => window.location.href = '/dashboard/qr-codes'}
+                     >
+                       View All QR Codes
+                     </Button>
+                   </div>
+                 )}
                </CardHeader>
                <CardBody>
                                    {isLoading || isInitializing ? (

@@ -123,16 +123,15 @@ class QRCode(models.Model):
             return content.get('text', '')
         
         elif self.qr_type == 'vcard':
-            # Generate vCard format
+            # Generate vCard format - use correct field names from frontend
             vcard = f"""BEGIN:VCARD
 VERSION:3.0
-FN:{content.get('full_name', '')}
-ORG:{content.get('organization', '')}
+FN:{content.get('name', '')}
+ORG:{content.get('company', '')}
 TEL:{content.get('phone', '')}
 EMAIL:{content.get('email', '')}
-URL:{content.get('website', '')}
+TITLE:{content.get('title', '')}
 ADR:;;{content.get('address', '')}
-NOTE:{content.get('notes', '')}
 END:VCARD"""
             return vcard
         
@@ -150,6 +149,26 @@ END:VCARD"""
             phone = content.get('phone', '')
             message = content.get('message', '')
             return f"sms:{phone}?body={message}"
+        
+        elif self.qr_type == 'event':
+            # Generate iCal format for events
+            title = content.get('title', '')
+            startTime = content.get('startTime', '')
+            endTime = content.get('endTime', '')
+            location = content.get('location', '')
+            description = content.get('description', '')
+            
+            ical = f"""BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:{title}
+DTSTART:{startTime}
+DTEND:{endTime}
+LOCATION:{location}
+DESCRIPTION:{description}
+END:VEVENT
+END:VCALENDAR"""
+            return ical
         
         elif self.qr_type == 'calendar':
             # Generate iCal format
