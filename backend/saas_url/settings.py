@@ -24,7 +24,7 @@ except ImportError:
 # Database URL configuration
 try:
     import dj_database_url
-    DATABASE_URL = 'postgresql://neondb_owner:npg_T3HtbvW7qnjl@ep-still-cake-adnvtjiv-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+    DATABASE_URL = env('DATABASE_URL', default=None)
 except ImportError:
     dj_database_url = None
     DATABASE_URL = None
