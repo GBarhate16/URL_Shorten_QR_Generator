@@ -20,6 +20,12 @@ export const API_CONFIG = {
     URLS: '/api/urls/',
     URL_REDIRECT: '/api/urls/redirect/',
     URLS_ANALYTICS: '/api/urls/analytics/',
+    
+    // QR code endpoints
+    QR_CODES: '/api/qr/codes/',
+    QR_STATS: '/api/qr/stats/',
+    QR_ANALYTICS: '/api/qr/analytics/',
+    QR_FILE_UPLOAD: '/api/qr/upload/',
   }
 };
 

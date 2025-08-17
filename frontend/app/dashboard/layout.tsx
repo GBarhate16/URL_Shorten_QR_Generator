@@ -20,6 +20,7 @@ import {
 import NextLink from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { useNotifications } from "@/contexts/notification-context";
+import { DashboardLoading } from "@/components/ui/dashboard-loading";
 import ThemeSwitcher from "@/components/theme-switcher";
 import {
   Home,
@@ -29,6 +30,8 @@ import {
   Crown,
   Users,
   Link as LinkIcon,
+  QrCode,
+  Scan,
 } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -56,6 +59,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (path === "overview" || path === "dashboard" || !path) return "overview";
     if (path === "create-url") return "create-url";
     if (path === "urls") return "urls";
+    if (path === "create-qr") return "create-qr";
+    if (path === "qr-codes") return "qr-codes";
     return "overview";
   }, [pathname]);
 
@@ -67,6 +72,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return "Create URL";
       case "urls":
         return "Your URLs";
+      case "create-qr":
+        return "Create QR Code";
+      case "qr-codes":
+        return "Your QR Codes";
       default:
         return "Dashboard";
     }
@@ -129,6 +138,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+              {/* QR Code Section */}
+              <SidebarSeparator />
+              <SidebarGroupLabel>QR Codes</SidebarGroupLabel>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={currentView === "create-qr"} asChild>
+                  <NextLink href="/dashboard/create-qr" prefetch onClick={closeMobileSidebar}>
+                    <QrCode />
+                    <span>Create QR Code</span>
+                  </NextLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={currentView === "qr-codes"} asChild>
+                  <NextLink href="/dashboard/qr-codes" prefetch onClick={closeMobileSidebar}>
+                    <Scan />
+                    <span>Your QR Codes</span>
+                  </NextLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* Admin Section */}
               {isAdmin && (
                 <>
@@ -175,17 +204,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content */}
       <SidebarInset>
-        <div className="sticky top-0 z-30 flex flex-wrap items-center gap-2 border-b bg-background px-3 py-2 sm:px-4 sm:static sm:border-0">
+        <div className="sticky top-0 z-30 flex flex-wrap items-center gap-2 border-b bg-background px-2 sm:px-4 py-2 sm:static sm:border-0">
           {/* Sidebar Toggle on Mobile */}
-          <SidebarTrigger className="text-foreground" aria-label="Toggle sidebar" />
+          <SidebarTrigger className="text-foreground sm:hidden" aria-label="Toggle sidebar" />
 
           {/* Title */}
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground truncate">
+          <h1 className="text-[clamp(16px,2vw,28px)] font-bold text-foreground truncate">
             {pageTitle}
           </h1>
 
           {/* Welcome Text */}
-          <p className="hidden md:block text-sm md:text-base text-muted-foreground truncate">
+          <p className="hidden md:block text-[clamp(12px,1.5vw,18px)] text-muted-foreground truncate">
             Welcome back, {userDisplayName}!
             {isAdmin && (
               <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
@@ -199,7 +228,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <ThemeSwitcher />
             {unreadCount > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200 truncate">
                 {unreadCount} new notification{unreadCount > 1 ? "s" : ""}
               </span>
             )}
@@ -207,8 +236,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Page Content */}
-        <main className="w-full max-w-full overflow-x-hidden px-3 sm:px-4 pb-6">
-          {children}
+        <main className="w-full max-w-full overflow-x-hidden px-2 sm:px-4 lg:px-6 pb-6">
+          <DashboardLoading>{children}</DashboardLoading>
         </main>
       </SidebarInset>
     </SidebarProvider>

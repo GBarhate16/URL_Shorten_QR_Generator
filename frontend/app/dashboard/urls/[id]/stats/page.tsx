@@ -11,7 +11,7 @@ import {
   TableColumn,
   TableBody,
   TableRow,
-  TableCell
+  TableCell,
 } from "@heroui/react";
 import { Button } from "@heroui/button";
 import { API_CONFIG, getApiUrl } from "@/config/api";
@@ -55,9 +55,9 @@ export default function UrlStatsPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/json"
+          Accept: "application/json",
         },
-        body: JSON.stringify({ refresh: refreshToken })
+        body: JSON.stringify({ refresh: refreshToken }),
       }
     );
     if (!resp.ok) return null;
@@ -81,7 +81,7 @@ export default function UrlStatsPage() {
       let resp = await fetch(
         `${API_CONFIG.BASE_URL}/api/urls/${urlId}/clicks/`,
         {
-          headers: { Authorization: `Bearer ${accessToken}` }
+          headers: { Authorization: `Bearer ${accessToken}` },
         }
       );
       if (resp.status === 401) {
@@ -93,7 +93,7 @@ export default function UrlStatsPage() {
         resp = await fetch(
           `${API_CONFIG.BASE_URL}/api/urls/${urlId}/clicks/`,
           {
-            headers: { Authorization: `Bearer ${newToken}` }
+            headers: { Authorization: `Bearer ${newToken}` },
           }
         );
       }
@@ -139,7 +139,7 @@ export default function UrlStatsPage() {
   }, [clicks]);
 
   return (
-    <div className="p-4 sm:p-6">
+    <div className="px-2 sm:px-4 md:px-6 lg:px-8 py-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-wrap items-center gap-2">
@@ -147,11 +147,11 @@ export default function UrlStatsPage() {
             variant="light"
             onPress={() => router.back()}
             size="sm"
-            className="text-sm sm:text-base"
+            className="text-[clamp(12px,1.5vw,16px)]"
           >
             {"←"} Back
           </Button>
-          <h1 className="text-lg sm:text-xl font-semibold">
+          <h1 className="text-[clamp(16px,2vw,22px)] font-semibold">
             URL Analytics
           </h1>
         </div>
@@ -159,7 +159,7 @@ export default function UrlStatsPage() {
         {/* Overview Card */}
         <Card>
           <CardHeader>
-            <h2 className="text-base sm:text-lg font-semibold">
+            <h2 className="text-[clamp(14px,1.8vw,20px)] font-semibold">
               Overview
             </h2>
           </CardHeader>
@@ -169,12 +169,12 @@ export default function UrlStatsPage() {
             ) : error ? (
               <div className="text-red-600 text-sm">{error}</div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="rounded border p-4">
                   <div className="text-xs sm:text-sm text-muted-foreground">
                     Total Clicks
                   </div>
-                  <div className="text-lg sm:text-2xl font-bold">
+                  <div className="text-[clamp(18px,2vw,26px)] font-bold">
                     {summary.total}
                   </div>
                 </div>
@@ -182,7 +182,7 @@ export default function UrlStatsPage() {
                   <div className="text-xs sm:text-sm text-muted-foreground">
                     Unique IPs
                   </div>
-                  <div className="text-lg sm:text-2xl font-bold">
+                  <div className="text-[clamp(18px,2vw,26px)] font-bold">
                     {summary.uniqueIps}
                   </div>
                 </div>
@@ -220,7 +220,7 @@ export default function UrlStatsPage() {
         {/* Click Events Card */}
         <Card>
           <CardHeader>
-            <h2 className="text-base sm:text-lg font-semibold">
+            <h2 className="text-[clamp(14px,1.8vw,20px)] font-semibold">
               Click Events
             </h2>
           </CardHeader>
@@ -230,9 +230,7 @@ export default function UrlStatsPage() {
             ) : error ? (
               <div className="text-red-600 text-sm">{error}</div>
             ) : !clicks || clicks.length === 0 ? (
-              <div className="text-muted-foreground">
-                No clicks yet.
-              </div>
+              <div className="text-muted-foreground">No clicks yet.</div>
             ) : (
               <div className="overflow-x-auto">
                 <Table
@@ -251,23 +249,21 @@ export default function UrlStatsPage() {
                   <TableBody>
                     {safeMap(clicks, (c) => (
                       <TableRow key={c.id}>
-                        <TableCell>
+                        <TableCell className="truncate max-w-[120px]">
                           {new Date(c.clicked_at).toLocaleString()}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="truncate max-w-[100px]">
                           {c.ip_address || "—"}
                         </TableCell>
-                        <TableCell>
-                          {c.device_type || "—"}
-                        </TableCell>
+                        <TableCell>{c.device_type || "—"}</TableCell>
                         <TableCell>{c.os || "—"}</TableCell>
-                        <TableCell>
-                          {c.browser || "—"}
-                        </TableCell>
-                        <TableCell>
+                        <TableCell>{c.browser || "—"}</TableCell>
+                        <TableCell className="truncate max-w-[120px]">
                           {c.referrer_domain || "direct"}
                         </TableCell>
-                        <TableCell>{c.location || "—"}</TableCell>
+                        <TableCell className="truncate max-w-[150px]">
+                          {c.location || "—"}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

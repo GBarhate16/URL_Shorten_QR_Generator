@@ -14,14 +14,14 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="text-center">
-        {/* Loader with responsive size */}
+        {/* Loader with fully responsive sizing */}
         <div
           className="animate-spin rounded-full border-b-2 border-primary mx-auto
-          h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 lg:h-14 lg:w-14"
+          h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 xl:h-20 xl:w-20"
         ></div>
 
-        {/* Text with responsive font size */}
-        <p className="mt-4 text-base sm:text-lg md:text-xl lg:text-2xl">
+        {/* Text with fluid font size */}
+        <p className="mt-4 text-[clamp(14px,2vw,28px)] font-medium">
           Loading dashboard...
         </p>
       </div>

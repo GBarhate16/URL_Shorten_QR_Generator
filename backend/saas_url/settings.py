@@ -24,7 +24,7 @@ except ImportError:
 # Database URL configuration
 try:
     import dj_database_url
-    DATABASE_URL = env('DATABASE_URL', default='')
+    DATABASE_URL = 'postgresql://neondb_owner:npg_T3HtbvW7qnjl@ep-still-cake-adnvtjiv-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
 except ImportError:
     dj_database_url = None
     DATABASE_URL = None
@@ -55,13 +55,14 @@ INSTALLED_APPS = [
     # Local apps
     'urls',
     'users',
+    'qr_codes',
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # Must be at the top
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # For static files
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -138,22 +139,37 @@ else:
 
 # Database
 if DATABASE_URL and dj_database_url:
-    # Use DATABASE_URL for production (Render)
+    # Use DATABASE_URL for production (Render/Neon)
     DATABASES = {
         'default': dj_database_url.config(default=DATABASE_URL)
     }
 else:
-    # Use individual environment variables for local development
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': env('DB_NAME', default='saas_url_db'),
-            'USER': env('DB_USER', default='postgres'),
-            'PASSWORD': env('DB_PASSWORD', default=''),
-            'HOST': env('DB_HOST', default='localhost'),
-            'PORT': env('DB_PORT', default='5432'),
+    # Check if PostgreSQL environment variables are set
+    db_host = env('DB_HOST', default='')
+    db_name = env('DB_NAME', default='')
+    db_user = env('DB_USER', default='')
+    db_password = env('DB_PASSWORD', default='')
+    
+    # If PostgreSQL credentials are provided, use PostgreSQL
+    if db_host and db_name and db_user:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': db_name,
+                'USER': db_user,
+                'PASSWORD': db_password,
+                'HOST': db_host,
+                'PORT': env('DB_PORT', default='5432'),
+            }
         }
-    }
+    else:
+        # Fallback to SQLite for local development
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -241,8 +257,8 @@ REST_FRAMEWORK = {
 # JWT Settings
 from datetime import timedelta
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': False,
@@ -292,3 +308,71 @@ BACKEND_URL = env('BACKEND_URL', default='http://127.0.0.1:8000')
 CLOUDINARY_CLOUD_NAME = env('CLOUDINARY_CLOUD_NAME', default='')
 CLOUDINARY_API_KEY = env('CLOUDINARY_API_KEY', default='')
 CLOUDINARY_API_SECRET = env('CLOUDINARY_API_SECRET', default='')
+
+# Cache configuration
+CACHE_RULES = {
+    # URL patterns that should be cached automatically
+    r'^/api/urls/$': {
+        'cache_type': 'url',
+        'ttl': 300,  # 5 minutes
+        'vary_by_user': True,
+        'vary_by_method': False,
+    },
+    r'^/api/urls/stats/$': {
+        'cache_type': 'analytics',
+        'ttl': 900,  # 15 minutes
+        'vary_by_user': True,
+        'vary_by_method': False,
+    },
+    r'^/api/urls/analytics/$': {
+        'cache_type': 'analytics',
+        'ttl': 900,  # 15 minutes
+        'vary_by_user': True,
+        'vary_by_method': False,
+    },
+    r'^/api/users/profile/$': {
+        'cache_type': 'user',
+        'ttl': 1800,  # 30 minutes
+        'vary_by_user': True,
+        'vary_by_method': False,
+    },
+    r'^/api/urls/redirect/(?P<short_code>[^/]+)/$': {
+        'cache_type': 'url',
+        'ttl': 3600,  # 1 hour
+        'vary_by_user': False,
+        'vary_by_method': False,
+    },
+}
+
+# Cache logging configuration
+CACHE_LOGGING = env.bool('CACHE_LOGGING', default=False)
+
+# Performance optimization settings
+ENABLE_GZIP = env.bool('ENABLE_GZIP', default=True)
+ENABLE_CACHE_HEADERS = env.bool('ENABLE_CACHE_HEADERS', default=True)
+ENABLE_QUERY_MONITORING = env.bool('ENABLE_QUERY_MONITORING', default=True)
+ENABLE_QUERY_OPTIMIZATION = env.bool('ENABLE_QUERY_OPTIMIZATION', default=True)
+MIN_RESPONSE_SIZE_FOR_GZIP = env.int('MIN_RESPONSE_SIZE_FOR_GZIP', default=500)
+
+# Cache duration settings (in seconds)
+CACHE_DURATIONS = {
+    'static': 31536000,  # 1 year
+    'api': 300,          # 5 minutes
+    'html': 600,         # 10 minutes
+    'json': 300,         # 5 minutes
+}
+
+# Database optimization settings
+DB_OPTIMIZATION = {
+    'enable_query_logging': env.bool('DB_ENABLE_QUERY_LOGGING', default=False),
+    'slow_query_threshold': env.float('DB_SLOW_QUERY_THRESHOLD', default=0.1),
+    'max_query_count_warning': env.int('DB_MAX_QUERY_COUNT_WARNING', default=20),
+}
+
+# Performance monitoring settings
+PERFORMANCE_MONITORING = {
+    'enable_metrics_collection': env.bool('PERF_ENABLE_METRICS', default=True),
+    'metrics_retention_hours': env.int('PERF_METRICS_RETENTION', default=24),
+    'slow_request_threshold': env.float('PERF_SLOW_REQUEST_THRESHOLD', default=1.0),
+    'high_query_threshold': env.int('PERF_HIGH_QUERY_THRESHOLD', default=10),
+}

@@ -92,6 +92,20 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     
     def get_object(self):
         return self.request.user
+    
+    def get(self, request, *args, **kwargs):
+        """Get user profile."""
+        return super().get(request, *args, **kwargs)
+    
+    def put(self, request, *args, **kwargs):
+        """Update user profile."""
+        response = super().put(request, *args, **kwargs)
+        return response
+    
+    def patch(self, request, *args, **kwargs):
+        """Partially update user profile."""
+        response = super().patch(request, *args, **kwargs)
+        return response
 
 class ChangePasswordView(APIView):
     """Change password view"""
@@ -103,7 +117,8 @@ class ChangePasswordView(APIView):
             user = request.user
             user.set_password(serializer.validated_data['new_password'])
             user.save()
-            return Response({'message': 'Password changed successfully'}, status=status.HTTP_200_OK)
+            
+            return Response({'message': 'Password changed successfully'})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class AdminDashboardView(APIView):

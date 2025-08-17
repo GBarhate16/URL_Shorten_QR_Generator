@@ -16,6 +16,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('urls.urls')),
     path('api/users/', include('users.urls')),
+    path('api/cache/', include('saas_url.cache_urls')),
+    path('api/performance/', include('saas_url.performance_urls')),
+    path('api/qr/', include('qr_codes.urls')),
 ]
 
 # Serve static and media files during development

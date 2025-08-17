@@ -5,46 +5,46 @@ import useSWR from "swr";
 import { getApiUrl } from "@/config/api";
 import { useAuth } from "@/contexts/auth-context";
 
-export type AnalyticsRange = "7d" | "30d" | "90d" | "180d" | "365d";
+export type QRAnalyticsRange = "7d" | "30d" | "90d" | "180d" | "365d";
 
-export interface TimePoint {
+export interface QRTimePoint {
   date: string;
   count: number;
 }
 
-export interface BreakdownItem {
+export interface QRBreakdownItem {
   label: string;
   count: number;
 }
 
-export interface AnalyticsResponse {
-  range: AnalyticsRange | string;
+export interface QRAnalyticsResponse {
+  range: QRAnalyticsRange | string;
   interval: string;
   totals: { 
-    total_urls: number; 
-    total_clicks: number; 
-    active_urls: number;
+    total_qr_codes: number; 
+    total_scans: number;
+    active_qr_codes: number;
+    dynamic_qr_codes: number;
   };
   series: {
-    urls_created: TimePoint[];
-    clicks: TimePoint[];
+    qr_codes_created: QRTimePoint[];
+    scans: QRTimePoint[];
   };
   breakdowns: {
-    countries: BreakdownItem[];
-    devices: BreakdownItem[];
-    os: BreakdownItem[];
-    browsers: BreakdownItem[];
-    referrers: BreakdownItem[];
+    countries: QRBreakdownItem[];
+    devices: QRBreakdownItem[];
+    os: QRBreakdownItem[];
+    browsers: QRBreakdownItem[];
+    qr_types: QRBreakdownItem[];
   };
-  updated_at?: string;
 }
 
-export function useAnalytics(range: AnalyticsRange = "30d") {
+export function useQRAnalytics(range: QRAnalyticsRange = "30d") {
   const { isAuthenticated, getValidAccessToken } = useAuth();
 
-  const key = useMemo(() => (isAuthenticated ? ["urls-analytics", range] : null), [isAuthenticated, range]);
+  const key = useMemo(() => (isAuthenticated ? ["qr-analytics", range] : null), [isAuthenticated, range]);
 
-  const fetcher = async (): Promise<AnalyticsResponse> => {
+  const fetcher = async (): Promise<QRAnalyticsResponse> => {
     // Get valid access token with automatic refresh if needed
     const token = await getValidAccessToken();
     if (!token) {
@@ -54,7 +54,7 @@ export function useAnalytics(range: AnalyticsRange = "30d") {
     const headers: Record<string, string> = { Accept: "application/json" };
     if (token) headers.Authorization = `Bearer ${token}`;
     
-    const url = `${getApiUrl("URLS_ANALYTICS")}?range=${encodeURIComponent(range)}`;
+    const url = `${getApiUrl("QR_ANALYTICS")}?range=${encodeURIComponent(range)}`;
     const resp = await fetch(url, { method: "GET", headers, mode: "cors", credentials: "omit" });
     
     if (!resp.ok) {
@@ -65,29 +65,27 @@ export function useAnalytics(range: AnalyticsRange = "30d") {
           headers.Authorization = `Bearer ${newToken}`;
           const retryResp = await fetch(url, { method: "GET", headers, mode: "cors", credentials: "omit" });
           if (retryResp.ok) {
-            return (await retryResp.json()) as AnalyticsResponse;
+            return (await retryResp.json()) as QRAnalyticsResponse;
           }
         }
       }
       
       const txt = await resp.text();
-      throw new Error(`Failed to fetch analytics: ${resp.status} ${txt}`);
+      throw new Error(`Failed to fetch QR analytics: ${resp.status} ${txt}`);
     }
     
-    return (await resp.json()) as AnalyticsResponse;
+    return (await resp.json()) as QRAnalyticsResponse;
   };
 
-  const { data, error, isLoading, mutate } = useSWR<AnalyticsResponse>(key, fetcher, {
+  const { data, error, isLoading, mutate } = useSWR<QRAnalyticsResponse>(key, fetcher, {
     revalidateOnFocus: true,
     refreshInterval: 5_000,
     dedupingInterval: 2_500,
     keepPreviousData: true as unknown as boolean,
     onError: (error) => {
-      console.error('Analytics fetch error:', error);
+      console.error('QR Analytics fetch error:', error);
     },
   });
 
   return { analytics: data, isLoading, error, mutate };
 }
-
-

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Card, CardBody, CardHeader, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
-import { getApiUrl, API_CONFIG } from "@/config/api";
-import { useRouter } from "next/navigation";
+import { useCallback, useState } from "react";
+import { Card, CardBody, CardHeader, Input, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
 import { useUrls } from "@/hooks/use-urls";
+import { useAnalytics } from "@/hooks/use-analytics";
+import { useDashboardData } from "@/contexts/dashboard-data-context";
+import { getApiUrl, API_CONFIG } from "@/config/api";
 import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "next/navigation";
 import { safeSlice, safeMap } from "@/lib/safe-arrays";
 
 function slugify(input: string): string {
@@ -21,13 +21,47 @@ function slugify(input: string): string {
 export default function CreateUrlPage() {
   const router = useRouter();
   const { urls, isLoading, mutate, getFullShortUrl } = useUrls();
+  const { mutate: refreshAnalytics } = useAnalytics("30d");
+  const { refetchAll: refreshDashboardData } = useDashboardData();
+  const { getValidAccessToken } = useAuth();
   const [newUrl, setNewUrl] = useState({ original_url: "", title: "", expires_at: "", short_code: "" });
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string>("");
-  const { getValidAccessToken } = useAuth();
+  const [deletingUrlId, setDeletingUrlId] = useState<number | null>(null);
 
   // Get the 3 latest URLs
   const latestUrls = safeSlice(urls, 0, 3);
+
+  const deleteUrl = useCallback(async (urlId: number) => {
+    const token = await getValidAccessToken();
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    setDeletingUrlId(urlId);
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/urls/${urlId}/`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        // Refresh URLs, analytics, and dashboard data
+        await mutate();
+        await refreshAnalytics();
+        await refreshDashboardData();
+      } else {
+        console.error('Failed to delete URL:', response.status);
+      }
+    } catch (error) {
+      console.error('Error deleting URL:', error);
+    } finally {
+      setDeletingUrlId(null);
+    }
+  }, [getValidAccessToken, router, mutate, refreshAnalytics, refreshDashboardData]);
 
   const downloadQr = useCallback(async (id: number, title?: string | null) => {
     const token = await getValidAccessToken();
@@ -90,64 +124,99 @@ export default function CreateUrlPage() {
     setSubmitting(true);
     setMessage("");
 
-    // Prepare payload; include short_code only if provided
-    const payload: Record<string, unknown> = {
-      original_url: newUrl.original_url,
-      title: newUrl.title,
-      expires_at: newUrl.expires_at ? new Date(newUrl.expires_at).toISOString() : null,
-    };
-    const cleanedSlug = slugify(newUrl.short_code || "");
-    if (cleanedSlug) {
-      payload.short_code = cleanedSlug;
-    }
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      setSubmitting(false);
+      setMessage("Request timed out. Please try again.");
+    }, 30000); // 30 second timeout
 
-    const postUrl = getApiUrl("URLS");
-    console.log("[CreateURL] POST", postUrl, payload);
-    let response = await fetch(postUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      mode: "cors",
-      credentials: "omit",
-      body: JSON.stringify(payload),
-    });
-
-    if (response.status === 401) {
-      // Try to refresh token and retry once
-      const newToken = await getValidAccessToken();
-      if (newToken && newToken !== token) {
-        console.log("[CreateURL] retry with refreshed token");
-        response = await fetch(postUrl, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${newToken}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          mode: "cors",
-          credentials: "omit",
-          body: JSON.stringify(payload),
-        });
+    try {
+      // Prepare payload; include short_code only if provided
+      const payload: Record<string, unknown> = {
+        original_url: newUrl.original_url,
+        title: newUrl.title,
+        expires_at: newUrl.expires_at ? new Date(newUrl.expires_at).toISOString() : null,
+      };
+      const cleanedSlug = slugify(newUrl.short_code || "");
+      if (cleanedSlug) {
+        payload.short_code = cleanedSlug;
       }
+
+      const postUrl = getApiUrl("URLS");
+      console.log("[CreateURL] Starting URL creation...", postUrl, payload);
+      const startTime = Date.now();
+      
+      let response = await fetch(postUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        mode: "cors",
+        credentials: "omit",
+        body: JSON.stringify(payload),
+      });
+
+      const endTime = Date.now();
+      console.log(`[CreateURL] Request completed in ${endTime - startTime}ms`, response.status);
+
+      if (response.status === 401) {
+        // Try to refresh token and retry once
+        const newToken = await getValidAccessToken();
+        if (newToken && newToken !== token) {
+          console.log("[CreateURL] retry with refreshed token");
+          response = await fetch(postUrl, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${newToken}`,
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            mode: "cors",
+            credentials: "omit",
+            body: JSON.stringify(payload),
+          });
+        }
+      }
+      
+      clearTimeout(timeoutId); // Clear timeout on success
+      
+      if (response.ok) {
+        // Immediately show success and reset form
+        setNewUrl({ original_url: "", title: "", expires_at: "", short_code: "" });
+        setMessage("Short URL created successfully!");
+        setSubmitting(false);
+        
+        // Refresh data in background (non-blocking)
+        console.log("[CreateURL] Starting background refresh...");
+        Promise.all([
+          mutate(),
+          refreshAnalytics(),
+          refreshDashboardData()
+        ]).then(() => {
+          console.log("[CreateURL] Background refresh completed");
+        }).catch(error => {
+          console.error('Background refresh error:', error);
+        });
+        
+        // Redirect after a short delay
+        setTimeout(() => {
+          router.push('/dashboard/urls');
+        }, 1000);
+      } else {
+        const errorText = await response.text();
+        console.error("[CreateURL] POST failed", response.status, errorText);
+        setMessage(errorText || `Failed to create short URL: ${response.status}`);
+        setSubmitting(false);
+      }
+    } catch (error) {
+      clearTimeout(timeoutId); // Clear timeout on error
+      console.error("[CreateURL] Network error:", error);
+      setMessage("Network error. Please check your connection and try again.");
+      setSubmitting(false);
     }
-    
-    if (response.ok) {
-      await mutate();
-      setNewUrl({ original_url: "", title: "", expires_at: "", short_code: "" });
-      setMessage("Short URL created successfully!");
-      setTimeout(() => {
-        router.push('/dashboard/urls');
-      }, 1200);
-    } else {
-      const errorText = await response.text();
-      console.error("[CreateURL] POST failed", response.status, errorText);
-      setMessage(errorText || `Failed to create short URL: ${response.status}`);
-    }
-    setSubmitting(false);
-  }, [newUrl, mutate, router, getValidAccessToken]);
+  }, [newUrl, mutate, router, refreshAnalytics, refreshDashboardData, getValidAccessToken]);
 
   return (
     <div className="p-4 sm:p-6">
@@ -220,11 +289,11 @@ export default function CreateUrlPage() {
                 />
               </div>
               <div className="flex items-center gap-4">
-                <Button type="submit" color="primary" isLoading={submitting}>
-                  Create Short URL
+                <Button type="submit" color="primary" isLoading={submitting} disabled={submitting}>
+                  {submitting ? "Creating..." : "Create Short URL"}
                 </Button>
                 {message && (
-                  <span className={`text-sm ${message.toLowerCase().includes("success") ? "text-green-600" : "text-red-600"}`}>
+                  <span className={`text-sm font-medium ${message.toLowerCase().includes("success") ? "text-green-600" : "text-red-600"}`}>
                     {message}
                   </span>
                 )}
@@ -312,7 +381,13 @@ export default function CreateUrlPage() {
                           <Button size="sm" variant="light" color="primary">
                             View Stats
                           </Button>
-                          <Button size="sm" variant="light" color="danger">
+                          <Button 
+                            size="sm" 
+                            variant="light" 
+                            color="danger"
+                            onPress={() => deleteUrl(url.id)}
+                            isLoading={deletingUrlId === url.id}
+                          >
                             Delete
                           </Button>
                         </div>

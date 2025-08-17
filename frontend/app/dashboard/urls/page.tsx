@@ -5,9 +5,12 @@ import { Card, CardBody, CardHeader, Table, TableHeader, TableColumn, TableBody,
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { useUrls } from "@/hooks/use-urls";
+import { useAnalytics } from "@/hooks/use-analytics";
+import { useDashboardData } from "@/contexts/dashboard-data-context";
 import type { ShortenedURL } from "@/hooks/use-urls";
 import { useRouter } from "next/navigation";
 import { API_CONFIG } from "@/config/api";
+import { useAuth } from "@/contexts/auth-context";
 import { safeArray, safeFilter, safeEvery, safeMap } from "@/lib/safe-arrays";
 
 function normalize(text: string | null | undefined): string {
@@ -16,14 +19,49 @@ function normalize(text: string | null | undefined): string {
 
 export default function UrlsPage() {
   const router = useRouter();
-  const { urls, isLoading, getFullShortUrl } = useUrls();
+  const { urls, isLoading, getFullShortUrl, mutate } = useUrls();
+  const { mutate: refreshAnalytics } = useAnalytics("30d");
+  const { refetchAll: refreshDashboardData } = useDashboardData();
+  const { getValidAccessToken } = useAuth();
 
   const [search, setSearch] = useState("");
   const [filterDate, setFilterDate] = useState(""); // YYYY-MM-DD
+  const [deletingUrlId, setDeletingUrlId] = useState<number | null>(null);
 
   const navigateToCreateUrl = useCallback(() => {
     router.push('/dashboard/create-url');
   }, [router]);
+
+  const deleteUrl = useCallback(async (urlId: number) => {
+    const token = await getValidAccessToken();
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    setDeletingUrlId(urlId);
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/urls/${urlId}/`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        // Refresh URLs, analytics, and dashboard data
+        await mutate();
+        await refreshAnalytics();
+        await refreshDashboardData();
+      } else {
+        console.error('Failed to delete URL:', response.status);
+      }
+    } catch (error) {
+      console.error('Error deleting URL:', error);
+    } finally {
+      setDeletingUrlId(null);
+    }
+  }, [getValidAccessToken, router, mutate, refreshAnalytics, refreshDashboardData]);
 
   const filteredUrls: ShortenedURL[] = useMemo(() => {
     const source = safeArray(urls);
@@ -183,7 +221,13 @@ export default function UrlsPage() {
                               <Button size="sm" variant="light" color="primary" onPress={() => router.push(`/dashboard/urls/${url.id}/stats`)}>
                                 View Stats
                               </Button>
-                              <Button size="sm" variant="light" color="danger">
+                              <Button 
+                                size="sm" 
+                                variant="light" 
+                                color="danger" 
+                                onPress={() => deleteUrl(url.id)}
+                                isLoading={deletingUrlId === url.id}
+                              >
                                 Delete
                               </Button>
                             </div>

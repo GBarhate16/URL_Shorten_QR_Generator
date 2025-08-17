@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { AnalyticsResponse, AnalyticsRange } from "@/hooks/use-analytics";
+import type { QRCodeStats } from "@/contexts/qr-codes-context";
 import { Button } from "@heroui/button";
 import { BarChart2, Globe, MonitorSmartphone, MousePointerClick, Link2, RefreshCcw } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -30,10 +31,11 @@ interface ChartsProps {
   range: AnalyticsRange;
   setRange: (r: AnalyticsRange) => void;
   stats: OverviewStats;
+  qrStats?: QRCodeStats;
   onRefresh?: () => void;
 }
 
-export default function AnalyticsCharts({ analytics, loading, error, range, setRange, stats, onRefresh }: ChartsProps) {
+export default function AnalyticsCharts({ analytics, loading, error, range, setRange, stats, qrStats, onRefresh }: ChartsProps) {
   const [activeTab, setActiveTab] = useState<'countries' | 'devices' | 'browsers' | 'referrers'>('countries');
   const isMobile = useIsMobile();
   
@@ -70,7 +72,7 @@ export default function AnalyticsCharts({ analytics, loading, error, range, setR
   return (
     <>
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+      <div className={`grid grid-cols-1 sm:grid-cols-${qrStats ? '6' : '4'} gap-4 mb-6`}>
         <div className="rounded-xl border bg-gradient-to-br from-primary/5 to-transparent p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -107,6 +109,28 @@ export default function AnalyticsCharts({ analytics, loading, error, range, setR
             <Globe className="h-6 w-6 text-fuchsia-500" />
           </div>
         </div>
+        {qrStats && (
+          <>
+            <div className="rounded-xl border bg-gradient-to-br from-purple-500/10 to-transparent p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total QR Codes</p>
+                  <p className="text-2xl font-bold">{qrStats.totalQrCodes}</p>
+                </div>
+                <BarChart2 className="h-6 w-6 text-purple-500" />
+              </div>
+            </div>
+            <div className="rounded-xl border bg-gradient-to-br from-orange-500/10 to-transparent p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">QR Code Scans</p>
+                  <p className="text-2xl font-bold">{qrStats.totalScans}</p>
+                </div>
+                <MousePointerClick className="h-6 w-6 text-orange-500" />
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Controls */}
