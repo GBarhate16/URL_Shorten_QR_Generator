@@ -98,8 +98,12 @@ class QRCodeCreateSerializer(serializers.ModelSerializer):
         logger.info("Content validation passed")
         return value
     
+    expires_at = serializers.DateTimeField(required=False, allow_null=True)
+    
     def validate_expires_at(self, value):
-        """Validate expiration date"""
+        """Handle empty string for expires_at and validate future date"""
+        if value == '':
+            return None
         if value and value <= timezone.now():
             raise serializers.ValidationError("Expiration date must be in the future")
         return value

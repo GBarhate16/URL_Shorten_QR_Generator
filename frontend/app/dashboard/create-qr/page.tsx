@@ -250,7 +250,13 @@ export default function CreateQrPage() {
     setMessage('');
 
     try {
-      await createQrCode(qrData);
+      // Convert empty string to null for expires_at
+      const qrDataToSend = {
+        ...qrData,
+        expires_at: qrData.expires_at || null
+      };
+      
+      await createQrCode(qrDataToSend);
       setMessage('QR code created successfully!');
       
       // Reset form
@@ -652,7 +658,7 @@ export default function CreateQrPage() {
                       <Input
                         type="datetime-local"
                         label="Expires At"
-                        value={qrData.expires_at}
+                        value={qrData.expires_at || ''}
                         onChange={(e) => handleInputChange('expires_at', e.target.value)}
                         placeholder="Select expiration date and time"
                         description="Leave empty for no expiration"

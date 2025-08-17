@@ -106,7 +106,7 @@ export interface CreateQRCodeData {
   is_dynamic: boolean;
   content: QRCodeContent;
   customization: QRCodeCustomization;
-  expires_at?: string;
+  expires_at?: string | null;
 }
 
 interface QRCodesContextType {
