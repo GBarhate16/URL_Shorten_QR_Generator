@@ -40,6 +40,30 @@ class QRCodeViewSet(viewsets.ModelViewSet):
             return QRCodeUpdateSerializer
         return QRCodeSerializer
     
+    def create(self, request, *args, **kwargs):
+        """Create a new QR code with better error logging"""
+        try:
+            logger.info(f"Creating QR code for user {request.user.id}")
+            logger.info(f"Request data: {request.data}")
+            
+            serializer = self.get_serializer(data=request.data)
+            if not serializer.is_valid():
+                logger.error(f"Validation errors: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            qr_code = self.perform_create(serializer)
+            logger.info(f"QR code created successfully: {qr_code.id}")
+            
+            response_serializer = QRCodeSerializer(qr_code)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Error creating QR code: {e}")
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     def perform_create(self, serializer):
         """Create QR code and generate image"""
         qr_code = serializer.save(user=self.request.user)

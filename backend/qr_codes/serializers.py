@@ -1,6 +1,9 @@
+import logging
 from rest_framework import serializers
 from .models import QRCode, QRCodeScan, QRCodeFile
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 
 class QRCodeFileSerializer(serializers.ModelSerializer):
@@ -59,31 +62,40 @@ class QRCodeCreateSerializer(serializers.ModelSerializer):
     def validate_content(self, value):
         """Validate content based on QR type"""
         qr_type = self.initial_data.get('qr_type')
+        logger.info(f"Validating content for QR type: {qr_type}")
+        logger.info(f"Content value: {value}")
         
         if qr_type == 'url':
             if 'url' not in value or not value['url']:
+                logger.error("URL is required for URL type QR codes")
                 raise serializers.ValidationError("URL is required for URL type QR codes")
         
         elif qr_type == 'wifi':
             if 'wifi' not in value or not value['wifi'] or not value['wifi'].get('ssid'):
+                logger.error("WiFi SSID is required for Wi-Fi QR codes")
                 raise serializers.ValidationError("WiFi SSID is required for Wi-Fi QR codes")
         
         elif qr_type == 'text':
             if 'text' not in value or not value['text']:
+                logger.error("Text content is required for text QR codes")
                 raise serializers.ValidationError("Text content is required for text QR codes")
         
         elif qr_type == 'vcard':
             if 'vcard' not in value or not value['vcard'] or not value['vcard'].get('name'):
+                logger.error("Contact name is required for vCard QR codes")
                 raise serializers.ValidationError("Contact name is required for vCard QR codes")
         
         elif qr_type == 'event':
             if 'event' not in value or not value['event'] or not value['event'].get('title'):
+                logger.error("Event title is required for event QR codes")
                 raise serializers.ValidationError("Event title is required for event QR codes")
         
         elif qr_type == 'file':
             if 'file' not in value or not value['file'] or not value['file'].get('url'):
+                logger.error("File URL is required for file QR codes")
                 raise serializers.ValidationError("File URL is required for file QR codes")
         
+        logger.info("Content validation passed")
         return value
     
     def validate_expires_at(self, value):

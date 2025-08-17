@@ -1,6 +1,7 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { API_CONFIG } from '@/config/api';
 
 interface User {
   id: number;
@@ -70,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Call refresh endpoint
-      const response = await fetch('/api/users/token/refresh/', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TOKEN_REFRESH}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

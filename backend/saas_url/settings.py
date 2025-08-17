@@ -211,7 +211,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'https://localhost:3000',
+    'https://127.0.0.1:3000',
 ])
+
+# Allow all origins in development (you can override this with environment variable)
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=True)
+else:
+    CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=False)
+
 CORS_ALLOW_CREDENTIALS = env.bool('CORS_ALLOW_CREDENTIALS', default=True)
 
 # Additional CORS settings to handle preflight requests
@@ -240,6 +249,8 @@ CORS_ALLOW_HEADERS = [
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'https://localhost:3000',
+    'https://127.0.0.1:3000',
 ])
 
 # Django REST Framework
