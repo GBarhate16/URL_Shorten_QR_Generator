@@ -69,10 +69,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
-    # Performance and scalability middleware
-    'saas_url.performance_middleware.PerformanceMiddleware',
-    'saas_url.rate_limiting.RateLimitingMiddleware',
-    'saas_url.security_middleware.SecurityHeadersMiddleware',
+    # Performance and scalability middleware - temporarily disabled for deployment
+    # 'saas_url.performance_middleware.PerformanceMiddleware',
+    # 'saas_url.rate_limiting.RateLimitingMiddleware',
+    # 'saas_url.security_middleware.SecurityHeadersMiddleware',
 ]
 
 ROOT_URLCONF = 'saas_url.urls'
