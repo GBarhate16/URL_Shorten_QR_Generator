@@ -19,6 +19,32 @@ dist/
 .env.production.local
 .env.backup
 
+# Production environment examples (don't commit these)
+production.env.example
+backend/production.env.example
+frontend/production.env.example
+*.env.example
+*.env.production.example
+
+# Performance optimization files (don't commit these)
+PERFORMANCE_OPTIMIZATION_GUIDE.md
+backend/performance_middleware.py
+backend/saas_url/performance_middleware.py
+backend/saas_url/rate_limiting.py
+backend/saas_url/security_middleware.py
+
+# Deployment scripts and configs (don't commit these)
+backend/deploy.sh
+backend/render-build.sh
+backend/render-start.sh
+backend/gunicorn.conf.py
+backend/vercel.json
+frontend/vercel.json
+
+# Service worker and offline files (don't commit these)
+frontend/public/sw.js
+frontend/public/offline.html
+
 # Python
 __pycache__/
 *.py[cod]
@@ -99,47 +125,35 @@ jspm_packages/
 # Optional REPL history
 .node_repl_history
 
-# Output of 'npm pack'
-*.tgz
+# Additional performance and deployment files
+# Backend performance files
+backend/saas_url/performance_middleware.py
+backend/saas_url/rate_limiting.py
+backend/saas_url/security_middleware.py
 
-# Yarn Integrity file
-.yarn-integrity
+# Frontend performance files
+frontend/public/sw.js
+frontend/public/offline.html
 
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
+# Deployment configurations
+backend/gunicorn.conf.py
+backend/vercel.json
+frontend/vercel.json
 
-# Next.js build output
-.next
+# Build and deployment scripts
+backend/deploy.sh
+backend/render-build.sh
+backend/render-start.sh
 
-# Nuxt.js build / generate output
-.nuxt
-dist
+# Documentation files
+PERFORMANCE_OPTIMIZATION_GUIDE.md
+README_PERFORMANCE.md
+DEPLOYMENT_GUIDE.md
+IMPLEMENTATION_SUMMARY.md
+DEPLOYMENT.md
 
-# Gatsby files
-.cache/
-public
-
-# Storybook build outputs
-.out
-.storybook-out
-
-# Temporary folders
-tmp/
-temp/
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Local development files
-*.local
-local_*
-debug_*
-test_*
+# Environment templates
+*.env.template
+*.env.example
+*.env.production.example
+production.env.example

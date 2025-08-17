@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "build:analyze": "ANALYZE=true next build",
+    "build:production": "NODE_ENV=production next build",
+    "start:production": "NODE_ENV=production next start",
+    "export": "next build && next export",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@heroui/react": "2.6.13",
@@ -17,6 +22,7 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "critters": "^0.0.23",
     "framer-motion": "^11.5.4",
     "lucide-react": "^0.539.0",
     "next": "14.2.10",

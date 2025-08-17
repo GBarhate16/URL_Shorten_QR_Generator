@@ -11,10 +11,10 @@ const jbMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
   title: {
-    default: "SaaS URL Shortener",
+    default: "SaaS URL Shortener & QR Generator",
     template: "%s | SaaS URL Shortener",
   },
-  description: "Shorten and manage your links.",
+  description: "Shorten URLs and generate QR codes with advanced analytics and customization.",
   icons: {
     icon: "/favicon.ico",
   },
@@ -27,15 +27,49 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const enableAnalytics = process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === "true";
+  const googleAnalyticsId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
+  
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {enableAnalytics && (
-          <Script
-            src={process.env.NEXT_PUBLIC_ANALYTICS_SCRIPT_URL || "https://plausible.gonzalochale.dev/js/script.outbound-links.js"}
-            strategy="afterInteractive"
-            data-domain={process.env.NEXT_PUBLIC_ANALYTICS_DOMAIN || "localhost"}
-          />
+        {/* Google Analytics */}
+        {enableAnalytics && googleAnalyticsId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${googleAnalyticsId}', {
+                  page_title: document.title,
+                  page_location: window.location.href,
+                });
+              `}
+            </Script>
+          </>
+        )}
+        
+        {/* Service Worker Registration */}
+        {process.env.NEXT_PUBLIC_ENABLE_SERVICE_WORKER === "true" && (
+          <Script id="service-worker" strategy="afterInteractive">
+            {`
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                      console.log('SW registered: ', registration);
+                    })
+                    .catch(function(registrationError) {
+                      console.log('SW registration failed: ', registrationError);
+                    });
+                });
+              }
+            `}
+          </Script>
         )}
       </head>
       <body className={`${notoSans.variable} ${jbMono.variable} antialiased font-sans`}>

@@ -1,7 +1,17 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Card, CardBody, CardHeader, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@heroui/react";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { useUrls } from "@/hooks/use-urls";
@@ -29,47 +39,50 @@ export default function UrlsPage() {
   const [deletingUrlId, setDeletingUrlId] = useState<number | null>(null);
 
   const navigateToCreateUrl = useCallback(() => {
-    router.push('/dashboard/create-url');
+    router.push("/dashboard/create-url");
   }, [router]);
 
-  const deleteUrl = useCallback(async (urlId: number) => {
-    const token = await getValidAccessToken();
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
-    setDeletingUrlId(urlId);
-    try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/urls/${urlId}/`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        // Refresh URLs, analytics, and dashboard data
-        await mutate();
-        await refreshAnalytics();
-        await refreshDashboardData();
-      } else {
-        console.error('Failed to delete URL:', response.status);
+  const deleteUrl = useCallback(
+    async (urlId: number) => {
+      const token = await getValidAccessToken();
+      if (!token) {
+        router.push("/login");
+        return;
       }
-    } catch (error) {
-      console.error('Error deleting URL:', error);
-    } finally {
-      setDeletingUrlId(null);
-    }
-  }, [getValidAccessToken, router, mutate, refreshAnalytics, refreshDashboardData]);
+
+      setDeletingUrlId(urlId);
+      try {
+        const response = await fetch(
+          `${API_CONFIG.BASE_URL}/api/urls/${urlId}/`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          await mutate();
+          await refreshAnalytics();
+          await refreshDashboardData();
+        } else {
+          console.error("Failed to delete URL:", response.status);
+        }
+      } catch (error) {
+        console.error("Error deleting URL:", error);
+      } finally {
+        setDeletingUrlId(null);
+      }
+    },
+    [getValidAccessToken, router, mutate, refreshAnalytics, refreshDashboardData]
+  );
 
   const filteredUrls: ShortenedURL[] = useMemo(() => {
     const source = safeArray(urls);
-
     const tokens = safeFilter(search.trim().toLowerCase().split(/\s+/), Boolean);
 
     return safeFilter(source, (u: ShortenedURL) => {
-      // Date filter: match created_at date to filterDate
       if (filterDate) {
         const createdISO = new Date(u.created_at).toISOString().slice(0, 10);
         if (createdISO !== filterDate) return false;
@@ -84,7 +97,6 @@ export default function UrlsPage() {
         normalize(getFullShortUrl(u.short_code)),
       ].join(" ");
 
-      // All tokens must be present (word-to-word AND search)
       return safeEvery(tokens, (t) => haystack.includes(t));
     });
   }, [urls, search, filterDate, getFullShortUrl]);
@@ -95,12 +107,14 @@ export default function UrlsPage() {
   }, []);
 
   return (
-    <div className="p-4 sm:p-6 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto w-full overflow-x-hidden px-1 sm:px-0">
+    <div className="p-3 sm:p-6">
+      <div className="max-w-7xl mx-auto w-full">
         <Card>
           <CardHeader>
             <div className="flex flex-col gap-3 w-full">
-              <h2 className="text-xl font-semibold">Your Shortened URLs</h2>
+              <h2 className="text-lg sm:text-xl font-semibold">
+                Your Shortened URLs
+              </h2>
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                 <div className="sm:col-span-7">
                   <Input
@@ -120,8 +134,16 @@ export default function UrlsPage() {
                   />
                 </div>
                 <div className="sm:col-span-2 flex gap-2">
-                  <Button variant="light" onPress={clearFilters}>Clear</Button>
-                  <Button color="primary" variant="solid" onPress={navigateToCreateUrl}>New</Button>
+                  <Button variant="light" onPress={clearFilters}>
+                    Clear
+                  </Button>
+                  <Button
+                    color="primary"
+                    variant="solid"
+                    onPress={navigateToCreateUrl}
+                  >
+                    New
+                  </Button>
                 </div>
               </div>
             </div>
@@ -134,7 +156,15 @@ export default function UrlsPage() {
               </div>
             ) : !urls || urls.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No URLs created yet. <Button color="primary" variant="light" onPress={navigateToCreateUrl}>Create your first short URL</Button>!
+                No URLs created yet.{" "}
+                <Button
+                  color="primary"
+                  variant="light"
+                  onPress={navigateToCreateUrl}
+                >
+                  Create your first short URL
+                </Button>
+                !
               </div>
             ) : (
               <>
@@ -143,98 +173,154 @@ export default function UrlsPage() {
                     No results match your filters.
                   </div>
                 ) : (
-                  <div className="table-wrap">
-                    <Table aria-label="Shortened URLs" className="min-w-[640px] w-full">
-                    <TableHeader>
-                      <TableColumn className="w-[14%]">Title</TableColumn>
-                      <TableColumn className="w-[24%]">Original URL</TableColumn>
-                      <TableColumn className="w-[24%]">Short URL</TableColumn>
-                      <TableColumn className="w-[8%] text-right">Clicks</TableColumn>
-                      <TableColumn className="w-[10%]">QR</TableColumn>
-                      <TableColumn className="w-[10%]">Created</TableColumn>
-                      <TableColumn className="w-[10%]">Expires</TableColumn>
-                      <TableColumn className="w-[10%] text-right">Actions</TableColumn>
-                    </TableHeader>
-                    <TableBody>
-                      {safeMap(filteredUrls, (url) => (
-                        <TableRow key={url.id}>
-                          <TableCell>
-                            <p className="font-medium truncate max-w-[220px]">{url.title || "Untitled"}</p>
-                          </TableCell>
-                          <TableCell>
-                            <a 
-                              href={url.original_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="text-primary hover:underline truncate block max-w-[320px]"
-                            >
-                              {url.original_url}
-                            </a>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2 min-w-0">
-                              <a 
-                                href={getFullShortUrl(url.short_code)} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="text-primary hover:underline truncate block max-w-[320px] font-mono text-sm"
+                  <div className="overflow-x-auto">
+                    <Table
+                      aria-label="Shortened URLs"
+                      className="min-w-[800px] w-full"
+                    >
+                      <TableHeader>
+                        <TableColumn className="w-[14%]">Title</TableColumn>
+                        <TableColumn className="w-[24%]">
+                          Original URL
+                        </TableColumn>
+                        <TableColumn className="w-[24%]">Short URL</TableColumn>
+                        <TableColumn className="w-[8%] text-right">
+                          Clicks
+                        </TableColumn>
+                        <TableColumn className="w-[10%]">QR</TableColumn>
+                        <TableColumn className="w-[10%]">Created</TableColumn>
+                        <TableColumn className="w-[10%]">Expires</TableColumn>
+                        <TableColumn className="w-[10%] text-right">
+                          Actions
+                        </TableColumn>
+                      </TableHeader>
+                      <TableBody>
+                        {safeMap(filteredUrls, (url) => (
+                          <TableRow key={url.id}>
+                            <TableCell>
+                              <p className="font-medium truncate max-w-[180px] sm:max-w-[220px]">
+                                {url.title || "Untitled"}
+                              </p>
+                            </TableCell>
+                            <TableCell>
+                              <a
+                                href={url.original_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline truncate block max-w-[200px] sm:max-w-[320px]"
                               >
-                                {getFullShortUrl(url.short_code)}
+                                {url.original_url}
                               </a>
-                              <Button 
-                                size="sm" 
-                                variant="light" 
-                                onPress={() => navigator.clipboard.writeText(getFullShortUrl(url.short_code))}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2 min-w-0">
+                                <a
+                                  href={getFullShortUrl(url.short_code)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline truncate block max-w-[200px] sm:max-w-[320px] font-mono text-sm"
+                                >
+                                  {getFullShortUrl(url.short_code)}
+                                </a>
+                                <Button
+                                  size="sm"
+                                  variant="light"
+                                  onPress={() =>
+                                    navigator.clipboard.writeText(
+                                      getFullShortUrl(url.short_code)
+                                    )
+                                  }
+                                >
+                                  Copy
+                                </Button>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-medium tabular-nums text-right block">
+                                {url.click_count}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                size="sm"
+                                variant="light"
+                                onPress={async () => {
+                                  const accessToken =
+                                    typeof window !== "undefined"
+                                      ? localStorage.getItem("accessToken")
+                                      : null;
+                                  if (!accessToken) {
+                                    router.push("/login");
+                                    return;
+                                  }
+                                  const resp = await fetch(
+                                    `${API_CONFIG.BASE_URL}/api/urls/${url.id}/qr-download/`,
+                                    {
+                                      headers: {
+                                        Authorization: `Bearer ${accessToken}`,
+                                      },
+                                    }
+                                  );
+                                  if (!resp.ok) return;
+                                  const blob = await resp.blob();
+                                  const objectUrl =
+                                    window.URL.createObjectURL(blob);
+                                  const a = document.createElement("a");
+                                  a.href = objectUrl;
+                                  a.download = `${(
+                                    url.title ||
+                                    url.short_code ||
+                                    "qr"
+                                  )
+                                    .toLowerCase()
+                                    .replace(/[^a-z0-9]+/g, "-")}.png`;
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  a.remove();
+                                  window.URL.revokeObjectURL(objectUrl);
+                                }}
                               >
-                                Copy
+                                Download QR
                               </Button>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="font-medium tabular-nums text-right block">{url.click_count}</span>
-                          </TableCell>
-                          <TableCell>
-                            <Button size="sm" variant="light" onPress={async () => {
-                              const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-                              if (!accessToken) { router.push('/login'); return; }
-                              const resp = await fetch(`${API_CONFIG.BASE_URL}/api/urls/${url.id}/qr-download/`, { headers: { Authorization: `Bearer ${accessToken}` } });
-                              if (!resp.ok) return;
-                              const blob = await resp.blob();
-                              const objectUrl = window.URL.createObjectURL(blob);
-                              const a = document.createElement('a');
-                              a.href = objectUrl;
-                              a.download = `${(url.title || url.short_code || 'qr').toLowerCase().replace(/[^a-z0-9]+/g,'-')}.png`;
-                              document.body.appendChild(a);
-                              a.click();
-                              a.remove();
-                              window.URL.revokeObjectURL(objectUrl);
-                            }}>
-                              Download QR
-                            </Button>
-                          </TableCell>
-                          <TableCell>{new Date(url.created_at).toLocaleString()}</TableCell>
-                          <TableCell>
-                            {url.expires_at ? new Date(url.expires_at).toLocaleString() : <span className="text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2 justify-end">
-                              <Button size="sm" variant="light" color="primary" onPress={() => router.push(`/dashboard/urls/${url.id}/stats`)}>
-                                View Stats
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="light" 
-                                color="danger" 
-                                onPress={() => deleteUrl(url.id)}
-                                isLoading={deletingUrlId === url.id}
-                              >
-                                Delete
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(url.created_at).toLocaleString()}
+                            </TableCell>
+                            <TableCell>
+                              {url.expires_at ? (
+                                new Date(url.expires_at).toLocaleString()
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-2 justify-end">
+                                <Button
+                                  size="sm"
+                                  variant="light"
+                                  color="primary"
+                                  onPress={() =>
+                                    router.push(
+                                      `/dashboard/urls/${url.id}/stats`
+                                    )
+                                  }
+                                >
+                                  View Stats
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="light"
+                                  color="danger"
+                                  onPress={() => deleteUrl(url.id)}
+                                  isLoading={deletingUrlId === url.id}
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
                     </Table>
                   </div>
                 )}
