@@ -1,30 +1,48 @@
+# Core Django packages
 Django==4.2.7
 djangorestframework==3.14.0
 django-cors-headers==4.3.1
 django-environ==0.11.2
+
+# Database
 psycopg[binary]==3.2.3
+
+# QR Code generation
 qrcode==7.4.2
-Pillow==11.1.0; python_version >= "3.13"
-Pillow==10.3.0; python_version < "3.13"
+Pillow==11.1.0
+
+# Authentication
 djangorestframework-simplejwt==5.3.0
 django-templated-mail==1.1.1
+
+# HTTP and networking
 requests==2.31.0
+
+# WebSocket support
 channels==4.0.0
 channels-redis==4.1.0
+
+# Redis
 redis==5.0.1
 django-redis==5.3.0
-cloudinary==1.41.0
-dj-database-url==2.1.0
-gunicorn==21.2.0
-whitenoise==6.6.0
-daphne==4.1.2
-psutil==5.9.6
 
-# Production scalability packages
-gevent==23.9.1
-hiredis==2.3.2
-uvloop==0.19.0; sys_platform != "win32"
-orjson==3.9.10
+# Cloud storage
+cloudinary==1.41.0
+
+# Database URL parsing
+dj-database-url==2.1.0
+
+# WSGI server
+gunicorn==21.2.0
+
+# Static files
+whitenoise==6.6.0
+
+# ASGI server
+daphne==4.1.2
+
+# System utilities
+psutil==5.9.6
 
 # Performance optimization packages
 django-compressor==4.4
@@ -39,3 +57,11 @@ django-db-connection-pool==1.1.5
 # Monitoring and health checks
 django-health-check==3.17.0
 django-prometheus==2.3.1
+
+# Performance packages (compatible versions)
+# Note: These packages were removed due to Python 3.13 compatibility issues
+# You can add them back when using Python 3.12 or when compatibility is resolved
+# gevent>=24.2.1  # For Python 3.13+
+# uvloop>=0.19.0  # For Python < 3.13
+# orjson>=3.9.10  # JSON optimization
+# hiredis>=2.3.2  # Redis optimization

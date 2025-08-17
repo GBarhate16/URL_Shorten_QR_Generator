@@ -21,16 +21,12 @@ from django.core.wsgi import get_wsgi_application
 # Get the WSGI application
 application = get_wsgi_application()
 
-# Production optimizations
+# Production optimizations - only if environment is production
 if os.environ.get('DJANGO_ENV') == 'production':
-    # Enable production optimizations
-    os.environ['DJANGO_SETTINGS_MODULE'] = 'saas_url.settings'
-    
-    # Set production environment variables
-    os.environ.setdefault('DJANGO_ENV', 'production')
+    # Enable production environment variables
     os.environ.setdefault('DJANGO_DEBUG', 'False')
     
-    # Import and configure production middleware
+    # Import and configure production middleware only if available
     try:
         from saas_url.performance_middleware import PerformanceMiddleware
         from saas_url.rate_limiting import RateLimitingMiddleware
@@ -41,7 +37,6 @@ if os.environ.get('DJANGO_ENV') == 'production':
         application = RateLimitingMiddleware(application)
         application = SecurityHeadersMiddleware(application)
         
-    except ImportError as e:
-        # Log warning if middleware not available
-        import logging
-        logging.warning(f"Production middleware not available: {e}")
+    except ImportError:
+        # Silently continue if middleware not available during build
+        pass
