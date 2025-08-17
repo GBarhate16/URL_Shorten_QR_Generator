@@ -42,3 +42,22 @@ CACHES = {
 
 # Use database for sessions instead of Redis
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
+# Use in-memory channel layer for WebSocket functionality without Redis
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
+
+# Disable Redis dependencies
+REDIS_URL = None
+CHANNEL_LAYER_BACKEND = None
+CHANNEL_LAYER_URL = None
+
+# Disable performance monitoring to avoid middleware issues
+ENABLE_PERFORMANCE_MONITORING = False
+ENABLE_RATE_LIMITING = False
+
+# Keep ASGI application enabled for WebSocket support
+# ASGI_APPLICATION = 'saas_url.asgi.application'  # This will use the conditional ASGI config

@@ -110,24 +110,38 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
 def send_notification_to_user(user_id, message):
     """Send notification to specific user"""
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        f"notifications_{user_id}",
-        {
-            'type': 'notification_message',
-            'notification': message['notification']
-        }
-    )
+    try:
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"notifications_{user_id}",
+            {
+                'type': 'notification_message',
+                'notification': message['notification']
+            }
+        )
+    except Exception as e:
+        # Log the error but don't break the application
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to send WebSocket notification via channel layer: {e}")
+        # Continue without WebSocket notification
 
 
 def send_url_click_update(user_id, url_id, click_count):
     """Send URL click update to specific user"""
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        f"notifications_{user_id}",
-        {
-            'type': 'url_click_update',
-            'url_id': url_id,
-            'click_count': click_count
-        }
-    )
+    try:
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"notifications_{user_id}",
+            {
+                'type': 'url_click_update',
+                'url_id': url_id,
+                'click_count': click_count
+            }
+        )
+    except Exception as e:
+        # Log the error but don't break the application
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to send URL click update via channel layer: {e}")
+        # Continue without WebSocket notification

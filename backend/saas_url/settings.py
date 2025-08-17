@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
-    'channels',
+    'channels',  # Re-enabled - will work with or without Redis
     
     # Local apps
     'urls',
@@ -99,74 +99,88 @@ WSGI_APPLICATION = 'saas_url.wsgi.application'
 ASGI_APPLICATION = 'saas_url.asgi.application'
 
 # Cache / Redis configuration
-# Enable Redis for production scalability
-REDIS_URL = env('REDIS_URL', default='redis://localhost:6379/1')
-CACHE_BACKEND = env('CACHE_BACKEND', default='django_redis.cache.RedisCache')
+# Enable Redis for production scalability (with fallback)
+REDIS_URL = env('REDIS_URL', default=None)
+CACHE_BACKEND = env('CACHE_BACKEND', default='django.core.cache.backends.locmem.LocMemCache')
 
-# Configure Redis caching for high performance
-CACHES = {
-    'default': {
-        'BACKEND': CACHE_BACKEND,
-        'LOCATION': REDIS_URL,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'CONNECTION_POOL_KWARGS': {
-                'max_connections': 50,
-                'retry_on_timeout': True,
-                'socket_keepalive': True,
-                'socket_keepalive_options': {},
+# Configure caching based on Redis availability
+if REDIS_URL and CACHE_BACKEND == 'django_redis.cache.RedisCache':
+    # Redis is available - use it
+    CACHES = {
+        'default': {
+            'BACKEND': CACHE_BACKEND,
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'CONNECTION_POOL_KWARGS': {
+                    'max_connections': 50,
+                    'retry_on_timeout': True,
+                    'socket_keepalive': True,
+                    'socket_keepalive_options': {},
+                },
+                'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
+                'IGNORE_EXCEPTIONS': True,
             },
-            'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
-            'IGNORE_EXCEPTIONS': True,
-            'PARSER_CLASS': 'redis.connection.HiredisParser',
+            'KEY_PREFIX': 'saas_url',
+            'TIMEOUT': 300,  # 5 minutes default
         },
-        'KEY_PREFIX': 'saas_url',
-        'TIMEOUT': 300,  # 5 minutes default
-    },
-    'sessions': {
-        'BACKEND': CACHE_BACKEND,
-        'LOCATION': REDIS_URL + '/2',
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'CONNECTION_POOL_KWARGS': {
-                'max_connections': 20,
+        'sessions': {
+            'BACKEND': CACHE_BACKEND,
+            'LOCATION': REDIS_URL + '/2',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'CONNECTION_POOL_KWARGS': {
+                    'max_connections': 20,
+                },
             },
+            'KEY_PREFIX': 'session',
+            'TIMEOUT': 86400,  # 24 hours
         },
-        'KEY_PREFIX': 'session',
-        'TIMEOUT': 86400,  # 24 hours
-    },
-    'analytics': {
-        'BACKEND': CACHE_BACKEND,
-        'LOCATION': REDIS_URL + '/3',
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'CONNECTION_POOL_KWARGS': {
-                'max_connections': 30,
+        'analytics': {
+            'BACKEND': CACHE_BACKEND,
+            'LOCATION': REDIS_URL + '/3',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'CONNECTION_POOL_KWARGS': {
+                    'max_connections': 30,
+                },
             },
-        },
-        'KEY_PREFIX': 'analytics',
-        'TIMEOUT': 1800,  # 30 minutes
+            'KEY_PREFIX': 'analytics',
+            'TIMEOUT': 1800,  # 30 minutes
+        }
     }
-}
-
-# Use Redis for session storage
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'sessions'
-
-# Channels configuration with Redis
-CHANNEL_LAYER_BACKEND = env('CHANNEL_LAYER_BACKEND', default='channels_redis.core.RedisChannelLayer')
-CHANNEL_LAYER_URL = env('CHANNEL_LAYER_URL', default=REDIS_URL)
-
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': CHANNEL_LAYER_BACKEND,
-        'CONFIG': {
-            'hosts': [CHANNEL_LAYER_URL],
-            'capacity': 1500,  # Maximum number of messages in a channel layer
-            'expiry': 10,      # Message expiry in seconds
+    
+    # Use Redis for sessions
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+    SESSION_CACHE_ALIAS = 'sessions'
+    
+    # Channels configuration with Redis
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [REDIS_URL],
+            },
         },
-    },
-}
+    }
+else:
+    # Redis not available - use local memory cache
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
+        }
+    }
+    
+    # Use database for sessions
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+    
+    # Use in-memory channel layer for WebSocket functionality
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        }
+    }
 
 # Database
 if DATABASE_URL and dj_database_url:

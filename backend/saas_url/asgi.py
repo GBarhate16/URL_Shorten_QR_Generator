@@ -16,18 +16,32 @@ import django  # noqa: E402
 django.setup()
 
 from django.core.asgi import get_asgi_application  # noqa: E402
-from channels.routing import ProtocolTypeRouter, URLRouter  # noqa: E402
-from channels.auth import AuthMiddlewareStack  # noqa: E402
-from .auth_middleware import JWTAuthMiddleware  # noqa: E402
-from urls.routing import websocket_urlpatterns  # noqa: E402
 
-django_asgi_app = get_asgi_application()
-
-application = ProtocolTypeRouter({
-    "http": django_asgi_app,
-    "websocket": AuthMiddlewareStack(
-        JWTAuthMiddleware(
-            URLRouter(websocket_urlpatterns)
-        )
-    ),
-})
+# Check if channels is available and configured
+try:
+    from channels.routing import ProtocolTypeRouter, URLRouter  # noqa: E402
+    from channels.auth import AuthMiddlewareStack  # noqa: E402
+    from .auth_middleware import JWTAuthMiddleware  # noqa: E402
+    from urls.routing import websocket_urlpatterns  # noqa: E402
+    
+    # Channels is available - use WebSocket routing
+    django_asgi_app = get_asgi_application()
+    
+    application = ProtocolTypeRouter({
+        "http": django_asgi_app,
+        "websocket": AuthMiddlewareStack(
+            JWTAuthMiddleware(
+                URLRouter(websocket_urlpatterns)
+            )
+        ),
+    })
+    
+except ImportError:
+    # Channels not available - use basic ASGI
+    application = get_asgi_application()
+except Exception as e:
+    # Channels configuration error - fallback to basic ASGI
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.warning(f"Channels configuration failed: {e}. Falling back to basic ASGI.")
+    application = get_asgi_application()

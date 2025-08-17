@@ -145,12 +145,17 @@ backend/deploy.sh
 backend/render-build.sh
 backend/render-start.sh
 
-# Documentation files
+# Documentation files (keep repository clean)
 PERFORMANCE_OPTIMIZATION_GUIDE.md
 README_PERFORMANCE.md
 DEPLOYMENT_GUIDE.md
 IMPLEMENTATION_SUMMARY.md
 DEPLOYMENT.md
+preparation.txt
+backend/DEPLOYMENT.md
+
+# Root level documentation
+preparation.txt
 
 # Environment templates
 *.env.template

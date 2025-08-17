@@ -157,19 +157,26 @@ class Notification(models.Model):
             data=data or {}
         )
         
-        # Send real-time notification via WebSocket
-        from .consumers import send_notification_to_user
-        send_notification_to_user(user.id, {
-            'type': 'notification',
-            'notification': {
-                'id': notification.id,
-                'type': notification.notification_type,
-                'title': notification.title,
-                'message': notification.message,
-                'data': notification.data,
-                'created_at': notification.created_at.isoformat(),
-                'is_read': notification.is_read
-            }
-        })
+        # Try to send real-time notification via WebSocket, but don't fail if it doesn't work
+        try:
+            from .consumers import send_notification_to_user
+            send_notification_to_user(user.id, {
+                'type': 'notification',
+                'notification': {
+                    'id': notification.id,
+                    'type': notification.notification_type,
+                    'title': notification.title,
+                    'message': notification.message,
+                    'data': notification.data,
+                    'created_at': notification.created_at.isoformat(),
+                    'is_read': notification.is_read
+                }
+            })
+        except Exception as e:
+            # Log the error but don't break the notification creation
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to send WebSocket notification: {e}")
+            # Continue without WebSocket notification - the notification is still created in DB
         
         return notification
