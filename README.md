@@ -2,6 +2,12 @@
 
 A modern, production-ready URL shortener SaaS application built with Django REST Framework backend and Next.js frontend, featuring comprehensive analytics, QR code generation, and real-time tracking.
 
+## 🖼️ Screenshots
+
+![Home Page](frontend/public/image1.png)
+
+![Dashboard](frontend/public/image2.png)
+
 ## 🚀 Features
 
 - **URL Shortening**: Create custom short links with branded domains
@@ -238,39 +244,6 @@ NEXT_PUBLIC_APP_URL=https://your-frontend-domain.com
 - **Backup systems**: Database and file backups
 - **Environment management**: Separate dev/staging/prod configs
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Add tests if applicable
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-## 📚 Documentation
-
-- **`preparation.txt`**: Complete project documentation and analysis
-- **`backend/DEPLOYMENT.md`**: Detailed deployment guide
-- **API Documentation**: Available at `/api/docs/` when running
-
-## 🆘 Support & Troubleshooting
-
-### Common Issues
-
-1. **Redis Connection Errors**: The app automatically falls back to in-memory storage
-2. **Database Issues**: Check your `DATABASE_URL` environment variable
-3. **Build Failures**: Ensure Python 3.12+ and Node.js 18+
-
-### Getting Help
-
-- **Issues**: Create an issue in the repository
-- **Documentation**: Check `preparation.txt` for detailed analysis
-- **Deployment**: Refer to `backend/DEPLOYMENT.md`
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🎯 Roadmap
 
