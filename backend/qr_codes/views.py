@@ -30,7 +30,14 @@ class QRCodeViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Get QR codes for the current user"""
-        return QRCode.objects.filter(user=self.request.user)
+        # For restore and permanent_delete actions, include deleted items
+        if self.action in ['restore', 'permanent_delete']:
+            return QRCode.objects.filter(user=self.request.user)
+        # Exclude deleted items by default
+        return QRCode.objects.filter(
+            user=self.request.user,
+            is_deleted=False
+        )
     
     def get_serializer_class(self):
         """Use different serializer for different actions"""
@@ -86,6 +93,17 @@ class QRCodeViewSet(viewsets.ModelViewSet):
             self.generate_qr_image(qr_code)
         
         return qr_code
+    
+    def destroy(self, request, *args, **kwargs):
+        """Override destroy to use soft delete instead of permanent deletion"""
+        instance = self.get_object()
+        instance.soft_delete(user=request.user)
+        
+        return Response({
+            'message': 'QR code moved to trash successfully',
+            'id': instance.id,
+            'days_remaining': instance.days_until_permanent_deletion()
+        })
     
     def generate_qr_image(self, qr_code):
         """Generate QR code image and upload to Cloudinary"""
@@ -251,6 +269,64 @@ class QRCodeViewSet(viewsets.ModelViewSet):
             'status_display': qr_code.get_status_display()
         })
 
+    @action(detail=True, methods=['post'])
+    def soft_delete(self, request, pk=None):
+        """Soft delete a QR code - move to trash"""
+        qr_obj = self.get_object()
+        qr_obj.soft_delete(user=request.user)
+        
+        return Response({
+            'message': 'QR code moved to trash successfully',
+            'id': qr_obj.id,
+            'days_remaining': qr_obj.days_until_permanent_deletion()
+        })
+
+    @action(detail=True, methods=['post'])
+    def restore(self, request, pk=None):
+        """Restore a QR code from trash"""
+        qr_obj = self.get_object()
+        if not qr_obj.is_deleted:
+            return Response({
+                'error': 'This QR code is not in trash'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        qr_obj.restore()
+        
+        return Response({
+            'message': 'QR code restored successfully',
+            'id': qr_obj.id
+        })
+
+    @action(detail=True, methods=['delete'])
+    def permanent_delete(self, request, pk=None):
+        """Permanently delete a QR code from trash"""
+        qr_obj = self.get_object()
+        if not qr_obj.is_deleted:
+            return Response({
+                'error': 'This QR code is not in trash'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        qr_obj.hard_delete()
+        
+        return Response({
+            'message': 'QR code permanently deleted'
+        })
+
+    @action(detail=False, methods=['get'])
+    def trash(self, request):
+        """Get all QR codes in trash for the current user"""
+        trash_qr_codes = QRCode.objects.filter(
+            user=request.user,
+            is_deleted=True
+        ).order_by('-deleted_at')
+        
+        # Add days remaining for each item
+        for qr in trash_qr_codes:
+            qr.days_remaining = qr.days_until_permanent_deletion()
+        
+        serializer = self.get_serializer(trash_qr_codes, many=True)
+        return Response(serializer.data)
+
 
 class QRCodeRedirectView(APIView):
     """
@@ -402,13 +478,29 @@ class QRCodeRedirectView(APIView):
             if ip_address in ['127.0.0.1', 'localhost'] or ip_address.startswith(('10.', '172.', '192.168.')):
                 return 'Local'
             
+            # Check if geolocation is disabled via environment variable
+            from django.conf import settings
+            if getattr(settings, 'DISABLE_GEOLOCATION', False):
+                return 'Unknown'
+            
             import requests
-            response = requests.get(f"https://ipapi.co/{ip_address}/json/", timeout=5)
+            # Use a shorter timeout and more robust error handling
+            response = requests.get(f"https://ipapi.co/{ip_address}/json/", timeout=2)
             response.raise_for_status()
             data = response.json()
-            return data.get('country_name', 'Unknown')
-        except (requests.exceptions.RequestException, requests.exceptions.Timeout) as e:
-            logger.warning(f"Could not get country from IP {ip_address}: {e}")
+            
+            # Validate response data
+            if isinstance(data, dict) and 'country_name' in data:
+                return data.get('country_name', 'Unknown') or 'Unknown'
+            else:
+                logger.warning(f"Invalid response format from geolocation API for IP {ip_address}")
+                return 'Unknown'
+                
+        except (requests.exceptions.RequestException, requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            logger.warning(f"Network error getting country from IP {ip_address}: {e}")
+            return 'Unknown'
+        except (ValueError, KeyError) as e:
+            logger.warning(f"Data parsing error for IP {ip_address}: {e}")
             return 'Unknown'
         except Exception as e:
             logger.warning(f"Unexpected error getting country from IP {ip_address}: {e}")
@@ -579,9 +671,36 @@ class QRCodeAnalyticsView(APIView):
             days = days_map.get(date_range, 30)
             start_dt = now - timedelta(days=days - 1)
 
-            # QuerySets
-            qr_codes_qs = QRCode.objects.filter(user=user, created_at__date__gte=start_dt.date())
-            scans_qs = QRCodeScan.objects.filter(qr_code__user=user, scanned_at__date__gte=start_dt.date())
+            # QuerySets with error handling
+            try:
+                qr_codes_qs = QRCode.objects.filter(user=user, created_at__date__gte=start_dt.date())
+                scans_qs = QRCodeScan.objects.filter(qr_code__user=user, scanned_at__date__gte=start_dt.date())
+            except Exception as db_error:
+                logger.error(f"Database query error in QR analytics: {db_error}")
+                # Return empty analytics data if database queries fail
+                return Response({
+                    'range': date_range,
+                    'interval': 'day',
+                    'totals': {
+                        'total_qr_codes': 0,
+                        'total_scans': 0,
+                        'active_qr_codes': 0,
+                        'dynamic_qr_codes': 0,
+                    },
+                    'series': {
+                        'qr_codes_created': [],
+                        'scans': [],
+                    },
+                    'breakdowns': {
+                        'countries': [{'label': 'No Data', 'count': 0}],
+                        'devices': [{'label': 'No Data', 'count': 0}],
+                        'os': [{'label': 'No Data', 'count': 0}],
+                        'browsers': [{'label': 'No Data', 'count': 0}],
+                        'qr_types': [{'label': 'No Data', 'count': 0}],
+                    },
+                    'updated_at': now.isoformat(),
+                    'error': 'Database connection issue'
+                })
 
             # Build daily buckets for QR codes created
             qr_code_dates = [dt.date().isoformat() for dt in qr_codes_qs.values_list('created_at', flat=True)]
@@ -660,11 +779,15 @@ class QRCodeAnalyticsView(APIView):
             qr_types_qs = qr_codes_qs.values('qr_type').annotate(count=Count('id')).order_by('-count')
             qr_types = [{'label': item['qr_type'], 'count': item['count']} for item in qr_types_qs]
 
-            # Totals
-            total_qr_codes = QRCode.objects.filter(user=user).count()
-            total_scans = QRCodeScan.objects.filter(qr_code__user=user).count()
-            active_qr_codes = QRCode.objects.filter(user=user, status='active').count()
-            dynamic_qr_codes = QRCode.objects.filter(user=user, is_dynamic=True).count()
+            # Totals with error handling
+            try:
+                total_qr_codes = QRCode.objects.filter(user=user).count()
+                total_scans = QRCodeScan.objects.filter(qr_code__user=user).count()
+                active_qr_codes = QRCode.objects.filter(user=user, status='active').count()
+                dynamic_qr_codes = QRCode.objects.filter(user=user, is_dynamic=True).count()
+            except Exception as totals_error:
+                logger.error(f"Error getting totals in QR analytics: {totals_error}")
+                total_qr_codes = total_scans = active_qr_codes = dynamic_qr_codes = 0
 
             analytics_data = {
                 'range': date_range,

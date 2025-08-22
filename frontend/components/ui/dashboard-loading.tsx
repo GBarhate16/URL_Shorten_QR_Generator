@@ -1,25 +1,25 @@
 "use client";
 
 import { useDashboardData } from "@/contexts/dashboard-data-context";
+import OptimizedLoading from "./optimized-loading";
+import { Suspense } from "react";
 
 interface DashboardLoadingProps {
   children: React.ReactNode;
   fallback?: React.ReactNode;
+  variant?: 'card' | 'table' | 'list' | 'dashboard';
 }
 
-export function DashboardLoading({ children, fallback }: DashboardLoadingProps) {
+export function DashboardLoading({ children, fallback, variant = 'dashboard' }: DashboardLoadingProps) {
   const { isInitializing } = useDashboardData();
 
   if (isInitializing) {
-    return fallback || (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-sm text-muted-foreground">Loading dashboard data...</p>
-        </div>
-      </div>
-    );
+    return fallback || <OptimizedLoading variant={variant} className="p-4" />;
   }
 
-  return <>{children}</>;
+  return (
+    <Suspense fallback={<OptimizedLoading variant={variant} className="p-4" />}>
+      {children}
+    </Suspense>
+  );
 }

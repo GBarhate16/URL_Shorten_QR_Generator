@@ -10,15 +10,17 @@ class ShortenedURLSerializer(serializers.ModelSerializer):
     qr_code_url = serializers.SerializerMethodField()
     qr_code_download_url = serializers.SerializerMethodField()
     full_short_url = serializers.SerializerMethodField()
+    days_remaining = serializers.SerializerMethodField()
     
     class Meta:
         model = ShortenedURL
         fields = [
             'id', 'original_url', 'short_code', 'title', 'description',
             'user', 'created_at', 'updated_at', 'expires_at', 'is_active',
-            'click_count', 'qr_code_url', 'qr_code_download_url', 'full_short_url'
+            'click_count', 'qr_code_url', 'qr_code_download_url', 'full_short_url',
+            'is_deleted', 'deleted_at', 'days_remaining'
         ]
-        read_only_fields = ['short_code', 'user', 'created_at', 'updated_at', 'click_count', 'qr_code_url', 'qr_code_download_url']
+        read_only_fields = ['short_code', 'user', 'created_at', 'updated_at', 'click_count', 'qr_code_url', 'qr_code_download_url', 'days_remaining']
     
     def get_qr_code_url(self, obj):
         # Only return Cloudinary URL if present; avoid accessing local file storage
@@ -40,6 +42,14 @@ class ShortenedURLSerializer(serializers.ModelSerializer):
         if request:
             return request.build_absolute_uri(f'/r/{obj.short_code}')
         return f'{getattr(settings, "FRONTEND_URL", "http://localhost:3000")}/r/{obj.short_code}'
+
+    def get_days_remaining(self, obj):
+        """Get days remaining until permanent deletion"""
+        if hasattr(obj, 'days_remaining'):
+            return obj.days_remaining
+        if obj.is_deleted and obj.deleted_at:
+            return obj.days_until_permanent_deletion()
+        return None
 
 
 class ShortenedURLCreateSerializer(serializers.ModelSerializer):

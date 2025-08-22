@@ -43,7 +43,7 @@ export default function SignupPage() {
     }
 
     try {
-      console.log("Submitting form data:", signupForm);
+      
       
       const response = await fetch(getApiUrl('REGISTER'), {
         method: "POST",
@@ -56,11 +56,10 @@ export default function SignupPage() {
         body: JSON.stringify(signupForm),
       });
 
-      console.log("Response status:", response.status);
-      console.log("Response headers:", response.headers);
+      
 
       const data = await response.json();
-      console.log("Response data:", data);
+      
 
       if (response.ok) {
         setSuccess("Account created successfully! Please login.");

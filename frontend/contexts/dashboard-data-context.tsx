@@ -35,6 +35,7 @@ export interface DashboardData {
   hasInitialized: boolean;
   error: Error | null;
   refetchAll: () => Promise<void>;
+  clearData: () => void;
 }
 
 interface DashboardDataContextType extends DashboardData {}
@@ -249,6 +250,61 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     }
   }, [isAuthenticated, hasInitialized, fetchAllData]);
 
+  // Function to manually clear all data
+  const clearData = useCallback(() => {
+    
+    setUrls([]);
+    setQrCodes([]);
+    setAnalytics(null);
+    setQrAnalytics(null);
+    setStats({
+      urls: { totalUrls: 0, totalClicks: 0, activeUrls: 0 },
+      qrCodes: { totalQrCodes: 0, totalScans: 0, activeQrCodes: 0, dynamicQrCodes: 0 }
+    });
+    setHasInitialized(false);
+    setError(null);
+    
+  }, []);
+
+  // Clear data when user logs out or authentication changes
+  useEffect(() => {
+    if (!isAuthenticated) {
+      // Clear all data when user is not authenticated
+      clearData();
+    }
+  }, [isAuthenticated, clearData]);
+
+  // Clear data when user ID changes (handles token refresh scenarios)
+  useEffect(() => {
+    const currentUserId = localStorage.getItem('userData') ? 
+      JSON.parse(localStorage.getItem('userData') || '{}').id : null;
+    
+    if (currentUserId && hasInitialized) {
+      // Check if user ID has changed
+      const lastUserId = localStorage.getItem('lastUserId');
+      if (lastUserId && lastUserId !== currentUserId.toString()) {
+        // User ID changed, clear data and re-fetch
+        clearData();
+        setHasInitialized(false);
+      }
+      // Update last user ID
+      localStorage.setItem('lastUserId', currentUserId.toString());
+    }
+  }, [hasInitialized, clearData]);
+
+  // Listen for logout events to clear data
+  useEffect(() => {
+    const handleUserLogout = () => {
+      clearData();
+    };
+
+    window.addEventListener('userLoggedOut', handleUserLogout);
+    
+    return () => {
+      window.removeEventListener('userLoggedOut', handleUserLogout);
+    };
+  }, [clearData]);
+
   const value: DashboardDataContextType = {
     urls,
     qrCodes,
@@ -259,6 +315,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     hasInitialized,
     error,
     refetchAll,
+    clearData,
   };
 
   return (

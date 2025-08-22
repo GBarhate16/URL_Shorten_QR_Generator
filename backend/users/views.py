@@ -411,3 +411,51 @@ class PasswordResetConfirmView(APIView):
                 'valid': False,
                 'message': 'Invalid token'
             }, status=status.HTTP_400_BAD_REQUEST)
+
+class DeleteAccountView(APIView):
+    """Delete user account and all associated data"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def delete(self, request):
+        """Delete user account and all associated data"""
+        try:
+            user = request.user
+            user_id = user.id
+            username = user.username
+            
+            logger.info(f"User {username} (ID: {user_id}) requested account deletion")
+            
+            # Delete all associated data first
+            from urls.models import ShortenedURL, URLClick, Notification
+            from qr_codes.models import QRCode, QRCodeScan, QRCodeFile
+            
+            # Delete URLs and related data
+            urls_deleted = ShortenedURL.objects.filter(user=user).count()
+            ShortenedURL.objects.filter(user=user).delete()
+            URLClick.objects.filter(user=user).delete()
+            Notification.objects.filter(user=user).delete()
+            
+            # Delete QR codes and related data
+            qr_codes_deleted = QRCode.objects.filter(user=user).count()
+            QRCode.objects.filter(user=user).delete()
+            QRCodeScan.objects.filter(user=user).delete()
+            QRCodeFile.objects.filter(user=user).delete()
+            
+            # Delete the user account
+            user.delete()
+            
+            logger.info(f"Successfully deleted user {username} (ID: {user_id}) and {urls_deleted} URLs, {qr_codes_deleted} QR codes")
+            
+            return Response({
+                'message': 'Account deleted successfully',
+                'data_deleted': {
+                    'urls': urls_deleted,
+                    'qr_codes': qr_codes_deleted
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error deleting user account: {e}")
+            return Response({
+                'error': 'Failed to delete account. Please try again.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

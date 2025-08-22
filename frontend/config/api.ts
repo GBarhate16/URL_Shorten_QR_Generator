@@ -12,6 +12,7 @@ export const API_CONFIG = {
     TOKEN_REFRESH: '/api/users/token/refresh/',
     PROFILE: '/api/users/profile/',
     CHANGE_PASSWORD: '/api/users/change-password/',
+    DELETE_ACCOUNT: '/api/users/delete-account/',
     RESET_PASSWORD: '/api/users/password-reset/',
     VERIFY_PASSWORD_RESET: '/api/users/password-reset/',
     RESEND_VERIFICATION: '/api/users/resend-verification/',

@@ -287,8 +287,8 @@ export function QRCodesProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.QR_CODES}${id}/`, {
-        method: 'DELETE',
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.QR_CODES}${id}/soft_delete/`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
         },

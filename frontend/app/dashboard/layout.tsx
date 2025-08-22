@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useEffect } from "react";
+import { useCallback, useMemo, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Sidebar,
@@ -21,6 +21,7 @@ import NextLink from "next/link";
 import { useAuth } from "@/contexts/auth-context";
 import { useNotifications } from "@/contexts/notification-context";
 import { DashboardLoading } from "@/components/ui/dashboard-loading";
+import DeleteAccountModal from "@/components/delete-account-modal";
 import ThemeSwitcher from "@/components/theme-switcher";
 import {
   Home,
@@ -32,13 +33,15 @@ import {
   Link as LinkIcon,
   QrCode,
   Scan,
+  Trash2,
 } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isAuthenticated, loading, logout, isAdmin } = useAuth();
+  const { user, isAuthenticated, loading, logout, deleteAccount, isAdmin } = useAuth();
   const { unreadCount } = useNotifications();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const closeMobileSidebar = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -61,6 +64,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (path === "urls") return "urls";
     if (path === "create-qr") return "create-qr";
     if (path === "qr-codes") return "qr-codes";
+    if (path === "trash") return "trash";
     return "overview";
   }, [pathname]);
 
@@ -76,6 +80,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return "Create QR Code";
       case "qr-codes":
         return "Your QR Codes";
+      case "trash":
+        return "Trash";
       default:
         return "Dashboard";
     }
@@ -88,6 +94,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     closeMobileSidebar();
     router.replace("/login");
   }, [logout, router, closeMobileSidebar]);
+
+  const handleDeleteAccount = useCallback(async () => {
+    setIsDeleteModalOpen(true);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    const success = await deleteAccount();
+    if (success) {
+      closeMobileSidebar();
+      router.replace("/");
+    }
+    return success;
+  }, [deleteAccount, closeMobileSidebar, router]);
+
+  const handleCloseDeleteModal = useCallback(() => {
+    setIsDeleteModalOpen(false);
+  }, []);
 
   if (loading || (!isAuthenticated && typeof window !== "undefined")) {
     return null; // prevent restricted page flash
@@ -158,6 +181,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </SidebarMenuButton>
               </SidebarMenuItem>
 
+              {/* Trash Section */}
+              <SidebarSeparator />
+              <SidebarGroupLabel>Trash</SidebarGroupLabel>
+              <SidebarMenuItem>
+                <SidebarMenuButton isActive={currentView === "trash"} asChild>
+                  <NextLink href="/dashboard/trash" prefetch onClick={closeMobileSidebar}>
+                    <Trash2 />
+                    <span>Trash</span>
+                  </NextLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {/* Admin Section */}
               {isAdmin && (
                 <>
@@ -192,6 +227,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Footer */}
         <SidebarFooter>
           <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={handleDeleteAccount} className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                <Trash2 />
+                <span>Delete Account</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton onClick={handleLogout}>
                 <LogOut />
@@ -240,6 +281,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <DashboardLoading>{children}</DashboardLoading>
         </main>
       </SidebarInset>
+      <DeleteAccountModal
+        isOpen={isDeleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleDeleteConfirm}
+        username={user?.username || 'User'}
+      />
     </SidebarProvider>
   );
 }

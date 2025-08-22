@@ -13,6 +13,7 @@ import { Button } from "@heroui/button";
 import ThemeSwitcher from "@/components/theme-switcher";
 import { useAuth } from "@/contexts/auth-context";
 import { useNotifications } from "@/contexts/notification-context";
+import DeleteAccountModal from "@/components/delete-account-modal";
 import {
   Dropdown,
   DropdownTrigger,
@@ -24,11 +25,13 @@ import {
 } from "@radix-ui/react-icons";
 import { useRouter } from "next/navigation";
 import { safeMap } from "@/lib/safe-arrays";
+import { useState } from "react";
 
 export default function NavBar() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, deleteAccount } = useAuth();
   const { unreadCount } = useNotifications();
   const router = useRouter();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const menuItems = [
     { name: "Pricing", href: "#pricing" },
@@ -38,6 +41,22 @@ export default function NavBar() {
   const handleLogout = () => {
     logout();
     router.push('/login');
+  };
+
+  const handleDeleteAccount = () => {
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    const success = await deleteAccount();
+    if (success) {
+      router.push('/');
+    }
+    return success;
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
   };
 
   return (
@@ -136,6 +155,9 @@ export default function NavBar() {
                   <DropdownMenu aria-label="User menu">
                     <DropdownItem key="profile">Profile</DropdownItem>
                     <DropdownItem key="settings">Settings</DropdownItem>
+                    <DropdownItem key="delete-account" color="danger" onPress={handleDeleteAccount}>
+                      Delete Account
+                    </DropdownItem>
                     <DropdownItem key="logout" color="danger" onPress={handleLogout}>
                       Logout
                     </DropdownItem>
@@ -184,6 +206,14 @@ export default function NavBar() {
           )}
         </NavbarMenu>
       </Navbar>
+      
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={isDeleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleDeleteConfirm}
+        username={user?.username || 'User'}
+      />
     </>
   );
 }

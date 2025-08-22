@@ -32,6 +32,7 @@ class QRCodeSerializer(serializers.ModelSerializer):
     scan_count = serializers.SerializerMethodField()
     qr_type_display = serializers.CharField(source='get_qr_type_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    days_remaining = serializers.SerializerMethodField()
     
     class Meta:
         model = QRCode
@@ -40,13 +41,21 @@ class QRCodeSerializer(serializers.ModelSerializer):
             'is_dynamic', 'content', 'qr_image', 'qr_image_url',
             'short_code', 'redirect_url', 'customization',
             'status', 'status_display', 'expires_at', 'created_at', 'updated_at',
-            'files', 'scans', 'scan_count'
+            'files', 'scans', 'scan_count', 'is_deleted', 'deleted_at', 'days_remaining'
         ]
-        read_only_fields = ['qr_image', 'qr_image_url', 'short_code', 'redirect_url', 'created_at', 'updated_at']
+        read_only_fields = ['qr_image', 'qr_image_url', 'short_code', 'redirect_url', 'created_at', 'updated_at', 'days_remaining']
     
     def get_scan_count(self, obj):
         """Get the number of scans for this QR code"""
         return obj.scans.count()
+    
+    def get_days_remaining(self, obj):
+        """Get days remaining until permanent deletion"""
+        if hasattr(obj, 'days_remaining'):
+            return obj.days_remaining
+        if obj.is_deleted and obj.deleted_at:
+            return obj.days_until_permanent_deletion()
+        return None
 
 
 class QRCodeCreateSerializer(serializers.ModelSerializer):

@@ -50,7 +50,7 @@ function LoginContent() {
     setFieldErrors({});
 
     try {
-      console.log("Submitting login data:", loginForm);
+      
       
       const response = await fetch(getApiUrl('LOGIN'), {
         method: "POST",
@@ -63,11 +63,10 @@ function LoginContent() {
         body: JSON.stringify(loginForm),
       });
 
-      console.log("Response status:", response.status);
-      console.log("Response headers:", response.headers);
+      
 
       const data = await response.json();
-      console.log("Response data:", data);
+      
 
       if (response.ok) {
         // Extract tokens and user data

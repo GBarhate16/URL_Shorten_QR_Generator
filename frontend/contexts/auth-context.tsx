@@ -24,6 +24,7 @@ interface AuthContextType {
   loading: boolean;
   login: (accessToken: string, refreshToken: string, userData: User) => void;
   logout: () => void;
+  deleteAccount: () => Promise<boolean>;
   updateUser: (userData: Partial<User>) => void;
   isAdmin: boolean;
   refreshAccessToken: () => Promise<string | null>;
@@ -168,7 +169,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('userData');
+    localStorage.removeItem('lastUserId'); // Clear user ID tracking
     setUser(null);
+    
+    // Dispatch custom event to notify other contexts to clear data
+    window.dispatchEvent(new CustomEvent('userLoggedOut'));
+  };
+
+  const deleteAccount = async (): Promise<boolean> => {
+    try {
+      const token = await getValidAccessToken();
+      if (!token) return false;
+
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/users/delete-account/`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Account deleted successfully, logout user
+        logout();
+        return true;
+      } else {
+        console.error('Failed to delete account:', response.status);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      return false;
+    }
   };
 
   const updateUser = (userData: Partial<User>) => {
@@ -191,6 +223,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAdmin,
     refreshAccessToken,
     getValidAccessToken, // Expose this for components to use
+    deleteAccount,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

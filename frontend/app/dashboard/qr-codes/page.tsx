@@ -342,7 +342,7 @@ export default function QrCodesPage() {
                     <Card 
                       key={qr.id} 
                       className="cursor-pointer hover:bg-gray-800/50 transition-colors"
-                      onClick={() => handleQrCodeClick(qr)}
+                      onPress={() => handleQrCodeClick(qr)}
                     >
                       <CardBody className="p-4">
                         <div className="flex items-start gap-4">

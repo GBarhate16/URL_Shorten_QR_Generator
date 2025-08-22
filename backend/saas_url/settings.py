@@ -35,7 +35,7 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-this-in-productio
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG', default=True)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '.onrender.com'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '.onrender.com', 'testserver'])
 
 # Application definition
 INSTALLED_APPS = [
@@ -409,6 +409,9 @@ ENABLE_CACHE_HEADERS = env.bool('ENABLE_CACHE_HEADERS', default=True)
 ENABLE_QUERY_MONITORING = env.bool('ENABLE_QUERY_MONITORING', default=True)
 ENABLE_QUERY_OPTIMIZATION = env.bool('ENABLE_QUERY_OPTIMIZATION', default=True)
 MIN_RESPONSE_SIZE_FOR_GZIP = env.int('MIN_RESPONSE_SIZE_FOR_GZIP', default=500)
+
+# Geolocation settings
+DISABLE_GEOLOCATION = env.bool('DISABLE_GEOLOCATION', default=False)
 
 # Cache duration settings (in seconds)
 CACHE_DURATIONS = {

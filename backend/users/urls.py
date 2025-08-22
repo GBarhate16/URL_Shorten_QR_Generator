@@ -23,6 +23,7 @@ urlpatterns = [
     # User profile endpoints
     path('profile/', views.UserProfileView.as_view(), name='user-profile'),
     path('change-password/', views.ChangePasswordView.as_view(), name='change-password'),
+    path('delete-account/', views.DeleteAccountView.as_view(), name='delete-account'),
     
     # Admin endpoints
     path('admin/dashboard/', views.AdminDashboardView.as_view(), name='admin-dashboard'),

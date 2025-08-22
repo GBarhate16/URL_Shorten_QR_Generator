@@ -60,13 +60,66 @@ class QRCode(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # Soft delete fields
+    is_deleted = models.BooleanField(default=False, db_index=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deleted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='deleted_qr_codes'
+    )
+    
     class Meta:
         ordering = ['-created_at']
         verbose_name = 'QR Code'
         verbose_name_plural = 'QR Codes'
+        indexes = [
+            models.Index(fields=['user', 'is_deleted', 'deleted_at']),
+            models.Index(fields=['is_deleted', 'deleted_at']),
+            models.Index(fields=['short_code']),
+        ]
     
     def __str__(self):
         return f"{self.title} ({self.get_qr_type_display()})"
+    
+    def soft_delete(self, user=None):
+        """Soft delete the QR code - move to trash"""
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.deleted_by = user
+        self.save(update_fields=['is_deleted', 'deleted_at', 'deleted_by'])
+    
+    def restore(self):
+        """Restore the QR code from trash"""
+        self.is_deleted = False
+        self.deleted_at = None
+        self.deleted_by = None
+        self.save(update_fields=['is_deleted', 'deleted_at', 'deleted_by'])
+    
+    def hard_delete(self):
+        """Permanently delete the QR code"""
+        super().delete()
+    
+    def days_until_permanent_deletion(self):
+        """Calculate days remaining until permanent deletion"""
+        if not self.is_deleted or not self.deleted_at:
+            return None
+        
+        from datetime import timedelta
+        deletion_date = self.deleted_at + timedelta(days=15)
+        remaining = deletion_date - timezone.now()
+        return max(0, remaining.days)
+    
+    def is_permanent_deletion_due(self):
+        """Check if permanent deletion is due"""
+        if not self.is_deleted or not self.deleted_at:
+            return False
+        
+        from datetime import timedelta
+        deletion_date = self.deleted_at + timedelta(days=15)
+        return timezone.now() >= deletion_date
     
     def save(self, *args, **kwargs):
         # Generate short code for dynamic QR codes

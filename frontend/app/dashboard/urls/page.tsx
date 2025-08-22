@@ -53,9 +53,9 @@ export default function UrlsPage() {
       setDeletingUrlId(urlId);
       try {
         const response = await fetch(
-          `${API_CONFIG.BASE_URL}/api/urls/${urlId}/`,
+          `${API_CONFIG.BASE_URL}/api/urls/${urlId}/soft_delete/`,
           {
-            method: "DELETE",
+            method: "POST",
             headers: {
               Authorization: `Bearer ${token}`,
             },

@@ -7,7 +7,6 @@ const nextConfig = {
   
   // Image optimization
   images: {
-    domains: ['res.cloudinary.com'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -32,7 +31,52 @@ const nextConfig = {
   // Performance optimizations
   experimental: {
     optimizeCss: true, // Optimize CSS
-    optimizePackageImports: ['lucide-react', '@nextui-org/react'],
+    optimizePackageImports: ['lucide-react', '@heroui/react'],
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
+  },
+
+  // Webpack optimizations
+  webpack: (config, { dev, isServer }) => {
+    // Optimize bundle splitting
+    if (!dev && !isServer) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          default: {
+            minChunks: 2,
+            priority: -20,
+            reuseExistingChunk: true,
+          },
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            priority: -10,
+            chunks: 'all',
+          },
+          heroui: {
+            test: /[\\/]node_modules[\\/]@heroui[\\/]/,
+            name: 'heroui',
+            priority: 10,
+            chunks: 'all',
+          },
+        },
+      };
+    }
+
+    // Optimize imports
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': new URL('./', import.meta.url).pathname,
+    };
+
+    return config;
   },
 
   // Bundle analyzer (optional, for debugging)

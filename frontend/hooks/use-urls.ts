@@ -48,7 +48,7 @@ export function useUrls() {
 		if (token) headers.Authorization = `Bearer ${token}`;
 
 		const url = getApiUrl("URLS");
-		console.log("[useUrls] GET", url);
+
 		const resp = await fetch(url, {
 			method: "GET",
 			headers,
@@ -80,7 +80,7 @@ export function useUrls() {
 		}
 
 		const data: unknown = await resp.json();
-		console.log("[useUrls] GET /urls ok, shape:", Array.isArray(data) ? "array" : typeof data);
+
 		const arr = extractArrayPayload(data);
 		if (arr) return arr as ShortenedURL[];
 		console.warn("[useUrls] Unexpected payload for /urls", data);
@@ -99,8 +99,8 @@ export function useUrls() {
 		);
 	}, [pathname]);
 
-  const refreshInterval = shouldPoll ? 5000 : 0; // reduce churn but still near real-time
-  const dedupeMs = Math.max(2500, Math.floor(refreshInterval * 0.5));
+  const refreshInterval = shouldPoll ? 10000 : 0; // Reduced from 5s to 10s for better performance
+  const dedupeMs = Math.max(5000, Math.floor(refreshInterval * 0.5)); // Increased deduping
 
 	const { data: urls, isLoading, error, mutate } = useSWR<ShortenedURL[]>(
 		swrKey,
@@ -114,8 +114,8 @@ export function useUrls() {
 			refreshWhenOffline: false,
 			revalidateIfStale: false,
 			revalidateOnMount: true,
-			errorRetryCount: 1,
-			errorRetryInterval: 60000,
+			errorRetryCount: 2,
+			errorRetryInterval: 30000,
 			keepPreviousData: true as unknown as boolean,
 		}
 	);

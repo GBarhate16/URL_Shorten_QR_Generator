@@ -10,13 +10,13 @@ from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from django.utils import timezone
 from datetime import timedelta
 from django.conf import settings
 from django.utils.text import slugify
 import qrcode
 from io import BytesIO
 import logging
+from django.core.cache import cache
 
 from .models import ShortenedURL, URLClick, Notification
 from .serializers import (
@@ -24,6 +24,8 @@ from .serializers import (
     URLClickSerializer, URLStatsSerializer, NotificationSerializer,
     parse_user_agent,
 )
+from qr_codes.models import QRCode
+from qr_codes.serializers import QRCodeSerializer
 
 
 """In-Memory caching implemented for improved performance."""
@@ -38,7 +40,14 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Get queryset for user URLs."""
         if self.request.user.is_authenticated:
-            return ShortenedURL.objects.filter(user=self.request.user)
+            # For restore and permanent_delete actions, include deleted items
+            if self.action in ['restore', 'permanent_delete']:
+                return ShortenedURL.objects.filter(user=self.request.user)
+            # Exclude deleted items by default
+            return ShortenedURL.objects.filter(
+                user=self.request.user,
+                is_deleted=False
+            )
         return ShortenedURL.objects.none()
     
     def get_serializer_class(self):
@@ -68,9 +77,73 @@ class ShortenedURLViewSet(viewsets.ModelViewSet):
         )
 
     def destroy(self, request, *args, **kwargs):
+        """Override destroy to use soft delete instead of permanent deletion"""
         instance = self.get_object()
-        response = super().destroy(request, *args, **kwargs)
-        return response
+        instance.soft_delete(user=request.user)
+        
+        return Response({
+            'message': 'URL moved to trash successfully',
+            'id': instance.id,
+            'days_remaining': instance.days_until_permanent_deletion()
+        })
+
+    @action(detail=True, methods=['post'])
+    def soft_delete(self, request, pk=None):
+        """Soft delete a URL - move to trash"""
+        url_obj = self.get_object()
+        url_obj.soft_delete(user=request.user)
+        
+        return Response({
+            'message': 'URL moved to trash successfully',
+            'id': url_obj.id,
+            'days_remaining': url_obj.days_until_permanent_deletion()
+        })
+
+    @action(detail=True, methods=['post'])
+    def restore(self, request, pk=None):
+        """Restore a URL from trash"""
+        url_obj = self.get_object()
+        if not url_obj.is_deleted:
+            return Response({
+                'error': 'This URL is not in trash'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        url_obj.restore()
+        
+        return Response({
+            'message': 'URL restored successfully',
+            'id': url_obj.id
+        })
+
+    @action(detail=True, methods=['delete'])
+    def permanent_delete(self, request, pk=None):
+        """Permanently delete a URL from trash"""
+        url_obj = self.get_object()
+        if not url_obj.is_deleted:
+            return Response({
+                'error': 'This URL is not in trash'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        url_obj.hard_delete()
+        
+        return Response({
+            'message': 'URL permanently deleted'
+        })
+
+    @action(detail=False, methods=['get'])
+    def trash(self, request):
+        """Get all URLs in trash for the current user"""
+        trash_urls = ShortenedURL.objects.filter(
+            user=request.user,
+            is_deleted=True
+        ).order_by('-deleted_at')
+        
+        # Add days remaining for each item
+        for url in trash_urls:
+            url.days_remaining = url.days_until_permanent_deletion()
+        
+        serializer = self.get_serializer(trash_urls, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
     def toggle_active(self, request, pk=None):
@@ -453,7 +526,7 @@ class URLRedirectView(APIView):
                 city=city or '',
             )
         except Exception as e:
-            print(f"Error recording click: {e}")
+            logger.error(f"Error recording click: {e}")
 
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
@@ -498,3 +571,188 @@ class PublicURLView(APIView):
                 'error': 'Authentication required for creating URLs'
             }, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CombinedTrashView(APIView):
+    """Combined view for trash items (URLs and QR codes) - Optimized for performance"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        """Get all trash items for the current user with filtering - Optimized for high loads"""
+        # Get filter parameters
+        item_type = request.GET.get('type', 'all')  # 'urls', 'qr_codes', or 'all'
+        search = request.GET.get('search', '')
+        
+        # Use select_related and prefetch_related for optimized queries
+        urls_query = ShortenedURL.objects.filter(
+            user=request.user,
+            is_deleted=True
+        ).select_related('user').only(
+            'id', 'title', 'short_code', 'original_url', 'description',
+            'is_deleted', 'deleted_at', 'user__username'
+        )
+        
+        qr_codes_query = QRCode.objects.filter(
+            user=request.user,
+            is_deleted=True
+        ).select_related('user').only(
+            'id', 'title', 'description', 'qr_type', 'is_deleted', 'deleted_at', 'user__username'
+        )
+        
+        # Apply search filter with optimized queries
+        if search:
+            search_lower = search.lower()
+            urls_query = urls_query.filter(
+                Q(title__icontains=search) | 
+                Q(short_code__icontains=search) | 
+                Q(original_url__icontains=search)
+            )
+            qr_codes_query = qr_codes_query.filter(
+                Q(title__icontains=search) | 
+                Q(description__icontains=search)
+            )
+        
+        # Apply type filter
+        if item_type == 'urls':
+            qr_codes_query = QRCode.objects.none()
+        elif item_type == 'qr_codes':
+            urls_query = ShortenedURL.objects.none()
+        
+        # Get results with optimized ordering and limit for performance
+        urls = list(urls_query.order_by('-deleted_at')[:1000])  # Limit to prevent memory issues
+        qr_codes = list(qr_codes_query.order_by('-deleted_at')[:1000])
+        
+        # Calculate days remaining efficiently in Python (avoid DB calls)
+        now = timezone.now()
+        for url in urls:
+            if url.deleted_at:
+                delta = (url.deleted_at + timedelta(days=15)) - now
+                url.days_remaining = max(0, delta.days)
+            else:
+                url.days_remaining = 0
+        
+        for qr in qr_codes:
+            if qr.deleted_at:
+                delta = (qr.deleted_at + timedelta(days=15)) - now
+                qr.days_remaining = max(0, delta.days)
+            else:
+                qr.days_remaining = 0
+        
+        # Serialize results with minimal fields for performance
+        url_serializer = ShortenedURLSerializer(urls, many=True)
+        qr_serializer = QRCodeSerializer(qr_codes, many=True)
+        
+        return Response({
+            'urls': url_serializer.data,
+            'qr_codes': qr_serializer.data,
+            'total_items': len(urls) + len(qr_codes),
+            'urls_count': len(urls),
+            'qr_codes_count': len(qr_codes),
+            'cached_at': now.isoformat()
+        })
+    
+    def post(self, request):
+        """Restore items from trash"""
+        action = request.data.get('action')
+        item_id = request.data.get('id')
+        item_type = request.data.get('type')
+        
+        if not all([action, item_id, item_type]):
+            return Response({
+                'error': 'Missing required fields: action, id, type'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            if action == 'restore':
+                if item_type == 'url':
+                    url_obj = ShortenedURL.objects.get(id=item_id, user=request.user)
+                    if not url_obj.is_deleted:
+                        return Response({
+                            'error': 'This URL is not in trash'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    url_obj.restore()
+                    return Response({
+                        'message': 'URL restored successfully',
+                        'id': url_obj.id
+                    })
+                elif item_type == 'qr_code':
+                    qr_obj = QRCode.objects.get(id=item_id, user=request.user)
+                    if not qr_obj.is_deleted:
+                        return Response({
+                            'error': 'This QR code is not in trash'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    qr_obj.restore()
+                    return Response({
+                        'message': 'QR code restored successfully',
+                        'id': qr_obj.id
+                    })
+                else:
+                    return Response({
+                        'error': 'Invalid item type'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({
+                    'error': 'Invalid action'
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except (ShortenedURL.DoesNotExist, QRCode.DoesNotExist):
+            return Response({
+                'error': 'Item not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'error': f'Failed to restore item: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def delete(self, request):
+        """Permanently delete items from trash"""
+        action = request.data.get('action')
+        item_id = request.data.get('id')
+        item_type = request.data.get('type')
+        
+        if not all([action, item_id, item_type]):
+            return Response({
+                'error': 'Missing required fields: action, id, type'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            if action == 'permanent_delete':
+                if item_type == 'url':
+                    url_obj = ShortenedURL.objects.get(id=item_id, user=request.user)
+                    if not url_obj.is_deleted:
+                        return Response({
+                            'error': 'This URL is not in trash'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    url_obj.hard_delete()
+                    return Response({
+                        'message': 'URL permanently deleted',
+                        'id': url_obj.id
+                    })
+                elif item_type == 'qr_code':
+                    qr_obj = QRCode.objects.get(id=item_id, user=request.user)
+                    if not qr_obj.is_deleted:
+                        return Response({
+                            'error': 'This QR code is not in trash'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    qr_obj.hard_delete()
+                    return Response({
+                        'message': 'QR code permanently deleted',
+                        'id': qr_obj.id
+                    })
+                else:
+                    return Response({
+                        'error': 'Invalid item type'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({
+                    'error': 'Invalid action'
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except (ShortenedURL.DoesNotExist, QRCode.DoesNotExist):
+            return Response({
+                'error': 'Item not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'error': f'Failed to delete item: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -22,13 +22,66 @@ class ShortenedURL(models.Model):
     qr_code = models.ImageField(upload_to='qr_codes/', blank=True, null=True)
     qr_code_url = models.URLField(max_length=2048, blank=True)  # Cloudinary URL
     
+    # Soft delete fields
+    is_deleted = models.BooleanField(default=False, db_index=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deleted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='deleted_urls'
+    )
+    
     class Meta:
         ordering = ['-created_at']
         verbose_name = 'Shortened URL'
         verbose_name_plural = 'Shortened URLs'
+        indexes = [
+            models.Index(fields=['user', 'is_deleted', 'deleted_at']),
+            models.Index(fields=['is_deleted', 'deleted_at']),
+            models.Index(fields=['short_code']),
+        ]
     
     def __str__(self):
         return f"{self.short_code} -> {self.original_url[:50]}..."
+    
+    def soft_delete(self, user=None):
+        """Soft delete the URL - move to trash"""
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.deleted_by = user
+        self.save(update_fields=['is_deleted', 'deleted_at', 'deleted_by'])
+    
+    def restore(self):
+        """Restore the URL from trash"""
+        self.is_deleted = False
+        self.deleted_at = None
+        self.deleted_by = None
+        self.save(update_fields=['is_deleted', 'deleted_at', 'deleted_by'])
+    
+    def hard_delete(self):
+        """Permanently delete the URL"""
+        super().delete()
+    
+    def days_until_permanent_deletion(self):
+        """Calculate days remaining until permanent deletion"""
+        if not self.is_deleted or not self.deleted_at:
+            return None
+        
+        from datetime import timedelta
+        deletion_date = self.deleted_at + timedelta(days=15)
+        remaining = deletion_date - timezone.now()
+        return max(0, remaining.days)
+    
+    def is_permanent_deletion_due(self):
+        """Check if permanent deletion is due"""
+        if not self.is_deleted or not self.deleted_at:
+            return False
+        
+        from datetime import timedelta
+        deletion_date = self.deleted_at + timedelta(days=15)
+        return timezone.now() >= deletion_date
     
     def save(self, *args, **kwargs):
         if not self.short_code:

@@ -41,8 +41,8 @@ export default function CreateUrlPage() {
 
     setDeletingUrlId(urlId);
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/urls/${urlId}/`, {
-        method: 'DELETE',
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/urls/${urlId}/soft_delete/`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -143,10 +143,8 @@ export default function CreateUrlPage() {
       }
 
       const postUrl = getApiUrl("URLS");
-      console.log("[CreateURL] Starting URL creation...", postUrl, payload);
-      const startTime = Date.now();
       
-      let response = await fetch(postUrl, {
+              let response = await fetch(postUrl, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -158,14 +156,11 @@ export default function CreateUrlPage() {
         body: JSON.stringify(payload),
       });
 
-      const endTime = Date.now();
-      console.log(`[CreateURL] Request completed in ${endTime - startTime}ms`, response.status);
-
       if (response.status === 401) {
         // Try to refresh token and retry once
         const newToken = await getValidAccessToken();
         if (newToken && newToken !== token) {
-          console.log("[CreateURL] retry with refreshed token");
+  
           response = await fetch(postUrl, {
             method: "POST",
             headers: {
@@ -189,13 +184,13 @@ export default function CreateUrlPage() {
         setSubmitting(false);
         
         // Refresh data in background (non-blocking)
-        console.log("[CreateURL] Starting background refresh...");
+
         Promise.all([
           mutate(),
           refreshAnalytics(),
           refreshDashboardData()
         ]).then(() => {
-          console.log("[CreateURL] Background refresh completed");
+  
         }).catch(error => {
           console.error('Background refresh error:', error);
         });
