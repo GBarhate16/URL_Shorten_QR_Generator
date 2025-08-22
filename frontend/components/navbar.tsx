@@ -24,7 +24,6 @@ import {
   ChevronDownIcon,
 } from "@radix-ui/react-icons";
 import { useRouter } from "next/navigation";
-import { safeMap } from "@/lib/safe-arrays";
 import { useState } from "react";
 
 export default function NavBar() {
@@ -32,11 +31,6 @@ export default function NavBar() {
   const { unreadCount } = useNotifications();
   const router = useRouter();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
-  const menuItems = [
-    { name: "Pricing", href: "#pricing" },
-    { name: "Testimonials", href: "#testimonials" },
-  ];
 
   const handleLogout = () => {
     logout();
@@ -66,9 +60,12 @@ export default function NavBar() {
         maxWidth="xl"
         className="backdrop-blur supports-[backdrop-filter]:bg-background/70"
       >
+        {/* Mobile: left - menu toggle */}
         <NavbarContent className="sm:hidden" justify="start">
           <NavbarMenuToggle />
         </NavbarContent>
+
+        {/* Mobile: center - brand */}
         <NavbarContent className="sm:hidden pr-3" justify="center">
           <NavbarBrand>
             <NextLink
@@ -79,15 +76,22 @@ export default function NavBar() {
             </NextLink>
           </NavbarBrand>
         </NavbarContent>
+
+        {/* Mobile: right - auth buttons when logged out */}
         <NavbarContent className="sm:hidden" justify="end">
           {!isAuthenticated && (
-            <NavbarItem>
+            <NavbarItem className="flex gap-2">
+              <Button as={NextLink} href="/login" variant="light" size="sm">
+                Login
+              </Button>
               <Button as={NextLink} href="/signup" color="primary" size="sm">
                 Get Started
               </Button>
             </NavbarItem>
           )}
         </NavbarContent>
+
+        {/* Desktop/tablet: brand and (placeholder center area if needed) */}
         <NavbarContent className="hidden sm:flex gap-10" justify="center">
           <NavbarBrand>
             <NextLink
@@ -97,29 +101,9 @@ export default function NavBar() {
               SaaS 
             </NextLink>
           </NavbarBrand>
-          <NavbarItem>
-            {/* <Button
-              as={NextLink}
-              href="#pricing"
-              variant="light"
-              size="md"
-              className="text-base md:text-lg font-medium"
-            >
-              Pricing
-            </Button> */}
-          </NavbarItem>
-          {/* <NavbarItem>
-            <Button
-              as={NextLink}
-              href="#testimonials"
-              variant="light"
-              size="md"
-              className="text-base md:text-lg font-medium"
-            >
-              Testimonials
-            </Button>
-          </NavbarItem> */}
         </NavbarContent>
+
+        {/* Right side: auth controls */}
         <NavbarContent justify="end">
           {isAuthenticated ? (
             <>
@@ -166,7 +150,16 @@ export default function NavBar() {
               </NavbarItem>
             </>
           ) : (
-            <NavbarItem className="hidden sm:flex">
+            <NavbarItem className="hidden sm:flex gap-2">
+              <Button
+                as={NextLink}
+                href="/login"
+                variant="light"
+                size="md"
+                className="text-sm md:text-base px-4 py-2"
+              >
+                Login
+              </Button>
               <Button
                 as={NextLink}
                 href="/signup"
@@ -183,25 +176,21 @@ export default function NavBar() {
             <ThemeSwitcher />
           </NavbarItem>
         </NavbarContent>
+
+        {/* Mobile menu content */}
         <NavbarMenu>
-          {safeMap(menuItems, (item, index) => (
-            <NavbarMenuItem key={`${item.name}-${index}`}>
-              <NextLink
-                className="w-full"
-                href={item.href}
-              >
-                {item.name}
-              </NextLink>
-            </NavbarMenuItem>
-          ))}
-          {isAuthenticated && (
+          {!isAuthenticated ? (
+            <>
+              <NavbarMenuItem>
+                <NextLink className="w-full" href="/login">Login</NextLink>
+              </NavbarMenuItem>
+              <NavbarMenuItem>
+                <NextLink className="w-full" href="/signup">Get Started</NextLink>
+              </NavbarMenuItem>
+            </>
+          ) : (
             <NavbarMenuItem>
-              <NextLink
-                className="w-full"
-                href="/dashboard"
-              >
-                Dashboard
-              </NextLink>
+              <NextLink className="w-full" href="/dashboard">Dashboard</NextLink>
             </NavbarMenuItem>
           )}
         </NavbarMenu>
